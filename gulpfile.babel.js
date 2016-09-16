@@ -21,6 +21,7 @@ import gulp from 'gulp';
 import gulpLoadPlugins from 'gulp-load-plugins';
 import gutil from 'gulp-util';
 import runSequence from 'run-sequence';
+import uglify from 'gulp-uglify';
 
 const $ = gulpLoadPlugins();
 
@@ -29,7 +30,8 @@ gulp.task('build', () => {
       .pipe(browserify({
         debug: gutil.env.type !== 'production',
       }))
-      .pipe(gulp.dest('dist'));
+          .pipe(gutil.env.type === 'production' ? uglify() : gutil.noop())
+          .pipe(gulp.dest('dist'));
 });
 
 gulp.task('lint', () => {

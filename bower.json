@@ -1,7 +1,7 @@
 {
   "name": "object-graph-js",
-  "description": "__PROJECT_DESCRIPTION",
-  "main": "dist/main.bundle.js",
+  "description": "Object graphs from Javascript worlds",
+  "main": "src/main.js",
   "authors": [
     "Mark Dittmer"
   ],
@@ -19,5 +19,6 @@
     "dist",
     "test",
     "tests"
-  ]
+  ],
+  "moduleType": "node"
 }

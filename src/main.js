@@ -16,23 +16,5 @@
  */
 'use strict';
 
-(function(global, name, deps, factory) {
-  if (typeof module !== 'undefined' && module.exports) {
-    module.exports = factory.apply(global, deps.map(require));
-  } else if (typeof define === 'function' && define.amd) {
-    if (!name) define(deps, factory);
-    else define(name, deps, factory);
-  } else {
-    if (!name && (typeof document === 'undefined' ||
-        document.currentScript === undefined)) {
-      throw new Error('Unknown module name');
-    }
-    name = name ||
-        document.currentScript.getAttribute('src').split('/').pop()
-        .split('#')[0].split('?')[0].split('.')[0];
-    global[name] = factory.apply(
-        this, deps.map(function(name) { return global[name]; }));
-  }
-})(this, 'object-graph-js', [], function() {
-  return null;
-});
+var NameRewriter = require('./NameRewriter.js');
+console.log(NameRewriter);
