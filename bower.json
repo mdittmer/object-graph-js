@@ -1,0 +1,23 @@
+{
+  "name": "object-graph-js",
+  "description": "__PROJECT_DESCRIPTION",
+  "main": "dist/main.bundle.js",
+  "authors": [
+    "Mark Dittmer"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [
+    "javascript"
+  ],
+  "homepage": "https://github.com/mdittmer/object-graph-js",
+  "private": true,
+  "ignore": [
+    "**/bower_components",
+    "**/node_modules",
+    "**/.*",
+    "npm-debug.log",
+    "dist",
+    "test",
+    "tests"
+  ]
+}
