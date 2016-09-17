@@ -16,6 +16,10 @@
  */
 'use strict';
 
+var stdlib = require('ya-stdlib-js');
+var remap = stdlib.remap;
+var facade = require('facade-js');
+var NameRewriter = require('./NameRewriter');
 // TODO: Setup deps: stdlib, remap, facade, NameRewriter, TaskQueue
 // Object identity and/or primitive type data storage.
 function ObjectGraph(opts) {
@@ -30,7 +34,9 @@ function ObjectGraph(opts) {
   this.blacklistedObjects.push(this);
 };
 
-ObjectGraph.prototype.userAgent = navigator.userAgent;
+ObjectGraph.prototype.userAgent = typeof navigator !== 'undefined' ?
+  navigator.userAgent :
+  typeof process !== 'undefined' ? 'NodeJS/' + process.version : 'Unknown';
 // Map of primitive types (leaves in object graph).
 // NOTE: It must be impossible for $UIDs of visited objects to take on these
 // values.

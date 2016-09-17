@@ -16,5 +16,8 @@
  */
 'use strict';
 
-var NameRewriter = require('./NameRewriter.js');
-console.log(NameRewriter);
+module.exports = {
+  NameRewriter: require('./NameRewriter.js'),
+  TaskQueue: require('./TaskQueue.js'),
+  ObjectGraph: require('./ObjectGraph.js'),
+};
