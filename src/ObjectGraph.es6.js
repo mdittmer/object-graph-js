@@ -235,7 +235,7 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   clone.protos = _.cloneDeep(this.protos);
   clone.functions = Array.from(this.functions);
 
-  this.initLazyData();
+  clone.initLazyData();
 
   return clone.removeIds(withoutIds);
 };
