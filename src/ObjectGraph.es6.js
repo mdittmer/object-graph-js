@@ -290,8 +290,10 @@ ObjectGraph.prototype.capture = function(o, opts) {
 ObjectGraph.prototype.removeIds = function(ids) {
   for (let id of ids) {
     delete this.data[id];
-    delete this.metadata[id];
     delete this.protos[id];
+    // TODO: Out-of-date data appears to be causing the need for this check.
+    if (this.metadata !== undefined && this.metadata[id] !== undefined)
+      delete this.metadata[id];
   }
   this.functions = _.difference(this.functions, ids);
 
