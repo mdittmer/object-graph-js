@@ -21,6 +21,6 @@ require('./id.js')();
 module.exports = {
   NameRewriter: require('./NameRewriter.js'),
   TaskQueue: require('./TaskQueue.js'),
-  ObjectGraph: require('./ObjectGraph.js'),
-  analysis: require('./analysis.js'),
+  ObjectGraph: require('./ObjectGraph.es6.js'),
+  analysis: require('./analysis.es6.js'),
 };
