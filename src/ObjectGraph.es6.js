@@ -295,6 +295,8 @@ ObjectGraph.prototype.removeIds = function(ids) {
     // TODO: Out-of-date data appears to be causing the need for this check.
     if (this.metadata !== undefined && this.metadata[id] !== undefined)
       delete this.metadata[id];
+    if (this.invData[id])
+      _.forOwn(this.invData[id], (refId, refKey) => delete data[refId][refKey]);
   }
   this.functions = _.difference(this.functions, ids);
 
