@@ -22,19 +22,5 @@
   "dependencies": {
     "facade-js": "git://github.com/mdittmer/facade-js.git",
     "ya-stdlib-js": "git://github.com/mdittmer/ya-stdlib-js.git"
-  },
-  "devDependencies": {
-    "esformatter": "^0.9.6",
-    "esformatter-add-trailing-commas": "^1.1.0",
-    "esformatter-auto-wrap": "^0.2.0",
-    "esformatter-onevar": "^0.2.0-dev",
-    "esformatter-semicolons": "^1.1.2",
-    "esformatter-var-each": "^2.1.0",
-    "eslint": "^3.5.0",
-    "eslint-config-google": "^0.6.0",
-    "version-bump-prompt": "^1.7.1"
-  },
-  "eslintConfig": {
-    "extends": "google"
   }
 }
