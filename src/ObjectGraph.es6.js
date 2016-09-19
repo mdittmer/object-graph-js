@@ -229,6 +229,7 @@ ObjectGraph.prototype.clone = function() {
 ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   var clone = new ObjectGraph(this);
 
+  clone.root = this.root;
   clone.data = _.clone(this.data);
   clone.metadata = _.clone(this.metadata);
   clone.protos = _.clone(this.protos);
