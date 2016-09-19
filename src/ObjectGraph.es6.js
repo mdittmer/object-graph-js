@@ -292,13 +292,32 @@ ObjectGraph.prototype.capture = function(o, opts) {
 // Interface method: Remove ids from the object graph.
 ObjectGraph.prototype.removeIds = function(ids) {
   for (let id of ids) {
-    delete this.data[id];
+    if (this.invData[id]) {
+      _.forOwn(this.invData[id],
+               (refIds, refKey) => {
+                 refIds.map(refId => delete this.data[refId][refKey]);
+               });
+    }
+    if (this.invProtos[id]) {
+      var newProto = id;
+      while (!this.isType(newProto) &&
+             ids.some(protoId => protoId === newProto))
+        newProto = this.getPrototype(newProto);
+      _.forOwn(this.invProtos[id],
+               protoId => {
+                 console.assert(this.protos[protoId] === id);
+                 this.protos[protoId] = newProto;
+               });
+    }
+  }
+  for (let id of ids) {
+    // Do not delete root data. We need it for lookup.
+    if (id !== this.root) delete this.data[id];
+
     delete this.protos[id];
     // TODO: Out-of-date data appears to be causing the need for this check.
     if (this.metadata !== undefined && this.metadata[id] !== undefined)
       delete this.metadata[id];
-    if (this.invData[id])
-      _.forOwn(this.invData[id], (refId, refKey) => delete data[refId][refKey]);
   }
   this.functions = _.difference(this.functions, ids);
 
