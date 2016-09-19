@@ -22,4 +22,5 @@ module.exports = {
   NameRewriter: require('./NameRewriter.js'),
   TaskQueue: require('./TaskQueue.js'),
   ObjectGraph: require('./ObjectGraph.js'),
+  analysis: require('./analysis.js'),
 };

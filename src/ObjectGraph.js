@@ -16,6 +16,8 @@
  */
 'use strict';
 
+var _ = require('lodash');
+
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
 var facade = require('facade-js');
@@ -25,11 +27,16 @@ var TaskQueue = require('./TaskQueue.js');
 // Object identity and/or primitive type data storage.
 function ObjectGraph(opts) {
   opts = opts || {};
+  this.init(opts);
+};
+
+ObjectGraph.prototype.init = function(opts) {
   this.q = new TaskQueue(opts);
   this.busy = false;
-  this.blacklistedObjects = this.blacklistedObjects.slice();
+  this.blacklistedObjects = opts.blacklistedObjects ||
+    this.blacklistedObjects.slice();
   this.nameRewriter = opts.nameRewriter || new NameRewriter();
-  this.keysCache = {};
+  this.keysCache = opts.keysCache || {};
 
   // Try to prevent recursion into internal structures.
   this.blacklistedObjects.push(this);
@@ -59,6 +66,11 @@ ObjectGraph.prototype.blacklistedKeys = [ '$UID', '$UID__', '__proto__' ];
 ObjectGraph.prototype.blacklistedObjects = [];
 
 ObjectGraph.prototype.initLazyData = function() {
+  stdlib.memo(this, 'invTypes', () => {
+    let invTypes = remap['a:b=>b:[a]'](this.types);
+    _.forOwn(invTypes, (v, k, o) => o[k] = v[0]);
+    return invTypes;
+  });
   stdlib.memo(this, 'invData',
               remap['a:b:c=>c:b:[a]'].bind(this, this.data));
   stdlib.memo(this, 'namedData',
@@ -68,6 +80,9 @@ ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'environment', function() {
     return this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
   }.bind(this));
+  stdlib.memo(this, 'allIds_', this.getAllIds_.bind(this));
+  stdlib.memo(this, 'allKeys_', this.getAllKeys_.bind(this));
+  stdlib.memo(this, 'allKeysMap_', this.getAllKeysMap_.bind(this));
 };
 
 ObjectGraph.prototype.storeObject = function(id) {
@@ -205,6 +220,23 @@ ObjectGraph.prototype.visitObject = function(o) {
   return o.$UID;
 };
 
+// Interface method: Clone an ObjectGraph.
+ObjectGraph.prototype.clone = function() {
+  return this.cloneWithout([]);
+};
+
+// Interface method: Clone an ObjectGraph with some IDs removed.
+ObjectGraph.prototype.cloneWithout = function(withoutIds) {
+  var clone = new ObjectGraph(this);
+
+  clone.data = _.clone(this.data);
+  clone.metadata = _.clone(this.metadata);
+  clone.protos = _.clone(this.protos);
+  clone.functions = Array.from(this.functions);
+
+  return clone.removeIds(withoutIds);
+};
+
 // Interface method: Visit the object graph rooted at o.
 // Supported options:
 //   onDone: Callback when visiting is finished.
@@ -254,10 +286,43 @@ ObjectGraph.prototype.capture = function(o, opts) {
   return this;
 };
 
+// Interface method: Remove ids from the object graph.
+ObjectGraph.prototype.removeIds = function(ids) {
+  for (let id of ids) {
+    delete this.data[id];
+    delete this.metadata[id];
+    delete this.protos[id];
+  }
+  this.functions = _.difference(this.functions, ids);
+
+  this.initLazyData();
+
+  return this;
+};
+
+// Interface method: Remove id => key mappings.
+ObjectGraph.prototype.removePrimitives = function(idKeyPairs) {
+  for (let {id, key} of idKeyPairs) {
+    console.assert(this.data[id] && this.isType(this.data[id][key]),
+                   `Attempt to remove non-primitive, ${id} . ${key}, with removePrimitives()`);
+    delete this.data[id][key];
+  }
+
+  this.initLazyData();
+
+  return this;
+};
+
 // Interface method: Does this id refer to a type?
 ObjectGraph.prototype.isType = function(id) {
   return id >= ( this.FIRST_TYPE || ObjectGraph.FIRST_TYPE ) &&
       id <= ( this.LAST_TYPE || ObjectGraph.LAST_TYPE );
+};
+
+// Interface method: Get type associated with id.
+ObjectGraph.prototype.getType = function(id) {
+  if (this.isType(id)) return this.invTypes[id];
+  return 'object';
 };
 
 // Interface method: Does id refer to a function?
@@ -279,6 +344,10 @@ ObjectGraph.prototype.getFunctions = function() {
 
 // Interface method: Get all ids in the system.
 ObjectGraph.prototype.getAllIds = function() {
+  return this.allIds_;
+};
+
+ObjectGraph.prototype.getAllIds_ = function() {
   var ids = [];
   var strIds = Object.getOwnPropertyNames(this.data);
   for ( var i = 0; i < strIds.length; i++ ) {
@@ -371,6 +440,10 @@ ObjectGraph.prototype.getShortestKey = function(id) {
 // Interface method: Get all keys for all ids; returns a map of the form:
 // { id: [keys] }.
 ObjectGraph.prototype.getAllKeys = function() {
+  return this.allKeys_;
+};
+
+ObjectGraph.prototype.getAllKeys_ = function() {
   var ids = this.getAllIds();
   var map = {};
   for ( var i = 0; i < ids.length; i++ ) {
@@ -380,6 +453,29 @@ ObjectGraph.prototype.getAllKeys = function() {
   return map;
 };
 
+// Interface method: Get all keys for all ids; returns a map of the form:
+// { id: [keys] }.
+ObjectGraph.prototype.getAllKeysMap = function() {
+  return this.allKeysMap_;
+};
+
+ObjectGraph.prototype.getAllKeysMap_ = function() {
+  var ids = this.getAllIds();
+  var map = {};
+  for ( var i = 0; i < ids.length; i++ ) {
+    var keys = this.getKeys(ids[i]);
+    for ( var j = 0; j < keys.length; j++ ) {
+      map[keys[j]] = 1;
+    }
+  }
+  return map;
+};
+
+// Interface method: Get prototype for id.
+ObjectGraph.prototype.getPrototype = function(id) {
+  return this.protos[id] || this.types['null'];
+};
+
 // Helper to .lookup() interface method; operates over path array starting
 // from root.
 ObjectGraph.prototype.lookup_ = function(path, root) {
@@ -387,10 +483,10 @@ ObjectGraph.prototype.lookup_ = function(path, root) {
   for ( var i = 0; i < path.length; i++ ) {
     var name = path[i];
     if ( name === '__proto__' ) {
-      nextId = this.protos[id];
+      nextId = this.getPrototype(id);
     } else {
       while ( ! this.isType(id) && ! ( nextId = this.data[id][name] ) )
-      id = this.protos[id];
+        id = this.getPrototype(id);
     }
     if ( this.isType(id) ) return null;
     if ( typeof nextId !== 'number' ) debugger;
@@ -437,9 +533,10 @@ ObjectGraph.fromJSON = function(o) {
 module.exports = facade(ObjectGraph, {
   properties: [ 'userAgent' ],
   methods: {
-    capture: 1, isType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
+    clone: 1, cloneWithout: 1, capture: 1, removeIds: 1, removePrimitives: 1,
+    isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
     getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
-    toJSON: 1, lookup: 1,
+    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1,
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
