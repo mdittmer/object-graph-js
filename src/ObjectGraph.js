@@ -19,8 +19,9 @@
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
 var facade = require('facade-js');
-var NameRewriter = require('./NameRewriter');
-// TODO: Setup deps: stdlib, remap, facade, NameRewriter, TaskQueue
+var NameRewriter = require('./NameRewriter.js');
+var TaskQueue = require('./TaskQueue.js');
+
 // Object identity and/or primitive type data storage.
 function ObjectGraph(opts) {
   opts = opts || {};
