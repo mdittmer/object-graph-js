@@ -230,9 +230,9 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   var clone = new ObjectGraph(this);
 
   clone.root = this.root;
-  clone.data = _.clone(this.data);
-  clone.metadata = _.clone(this.metadata);
-  clone.protos = _.clone(this.protos);
+  clone.data = _.cloneDeep(this.data);
+  clone.metadata = _.cloneDeep(this.metadata);
+  clone.protos = _.cloneDeep(this.protos);
   clone.functions = Array.from(this.functions);
 
   return clone.removeIds(withoutIds);
