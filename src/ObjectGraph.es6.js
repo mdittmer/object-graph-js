@@ -83,6 +83,8 @@ ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'allIds_', this.getAllIds_.bind(this));
   stdlib.memo(this, 'allKeys_', this.getAllKeys_.bind(this));
   stdlib.memo(this, 'allKeysMap_', this.getAllKeysMap_.bind(this));
+
+  this.keysCache = {};
 };
 
 ObjectGraph.prototype.storeObject = function(id) {
@@ -229,6 +231,7 @@ ObjectGraph.prototype.clone = function() {
 ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   var clone = new ObjectGraph(this);
 
+  clone.key = this.key;
   clone.root = this.root;
   clone.data = _.cloneDeep(this.data);
   clone.metadata = _.cloneDeep(this.metadata);
@@ -289,39 +292,68 @@ ObjectGraph.prototype.capture = function(o, opts) {
   return this;
 };
 
+ObjectGraph.prototype.removeRefs_ = function(id, ids) {
+  let found = false;
+  if (this.invData[id]) {
+    _.forOwn(
+      this.invData[id],
+      (refIds, refKey) => refIds.forEach(
+        refId => {
+          found = true;
+          delete this.data[refId][refKey];
+        }
+      )
+    );
+  }
+  if (this.invProtos[id]) {
+    var newProto = id;
+    while (!this.isType(newProto) &&
+           ids.some(protoId => protoId === newProto))
+      newProto = this.getPrototype(newProto);
+
+    _.forOwn(this.invProtos[id],
+             protoId => {
+               found = true;
+               console.assert(this.protos[protoId] === id);
+               this.protos[protoId] = newProto;
+             });
+  }
+  return found;
+};
+
+ObjectGraph.prototype.removeData_ = function(id) {
+  delete this.data[id];
+  delete this.protos[id];
+  // TODO: Out-of-date data appears to be causing the need for this check.
+  if (this.metadata !== undefined && this.metadata[id] !== undefined)
+    delete this.metadata[id];
+  return true;
+};
+
 // Interface method: Remove ids from the object graph.
+// Also clean up objects orphaned by id removals.
 ObjectGraph.prototype.removeIds = function(ids) {
-  for (let id of ids) {
-    if (this.invData[id]) {
-      _.forOwn(this.invData[id],
-               (refIds, refKey) => {
-                 refIds.map(refId => delete this.data[refId][refKey]);
-               });
-    }
-    if (this.invProtos[id]) {
-      var newProto = id;
-      while (!this.isType(newProto) &&
-             ids.some(protoId => protoId === newProto))
-        newProto = this.getPrototype(newProto);
-      _.forOwn(this.invProtos[id],
-               protoId => {
-                 console.assert(this.protos[protoId] === id);
-                 this.protos[protoId] = newProto;
-               });
-    }
-  }
-  for (let id of ids) {
-    // Do not delete root data. We need it for lookup.
-    if (id !== this.root) delete this.data[id];
+  // Do not touch root object or references to it.
+  ids = ids.filter(id => id !== this.root);
 
-    delete this.protos[id];
-    // TODO: Out-of-date data appears to be causing the need for this check.
-    if (this.metadata !== undefined && this.metadata[id] !== undefined)
-      delete this.metadata[id];
-  }
-  this.functions = _.difference(this.functions, ids);
+  // Keep removing objects until no remaining objects are orphaned from root.
+  do {
+    for (let id of ids) {
+      this.removeRefs_(id, ids);
+    }
+    for (let id of ids) {
+      this.removeData_(id);
+    }
+    this.functions = _.difference(this.functions, ids);
 
-  this.initLazyData();
+    // Object graph has changed! Flush lazily computed data.
+    this.initLazyData();
+
+    ids = this.getAllIds().filter(id => {
+      return this.getShortestKey(id) === null;
+    });
+  } while (ids.length > 0);
+
 
   return this;
 };
@@ -383,58 +415,7 @@ ObjectGraph.prototype.getAllIds_ = function() {
   return ids.sort();
 };
 
-// Helper method: Get all keys that refer to an object id, tracking which ids
-// have already been seen.
-ObjectGraph.prototype.getKeys_ = function(id, seen) {
-  console.assert( ! seen[id] , 'Revisit object');
-  seen[id] = 1;
-  if ( id === this.root ) return [this.key];
 
-  var allKeys = [];
-  var map = this.invData[id];
-
-  if ( ! map ) {
-    // console.warn('Orphaned object', id);
-    return [];
-  }
-
-  // Get all the one-step keys through which other objects point to id.
-  var keys = Object.getOwnPropertyNames(map).sort(), i;
-  for ( i = 0; i < keys.length; i++ ) {
-    var key = keys[i];
-    if ( this.isKeyBlacklisted(key) ) continue;
-
-    var ids = map[key];
-    for ( var j = 0; j < ids.length; j++ ) {
-      var invId = ids[j];
-
-      if ( seen[invId] ) continue;
-      // Recurse: Get all complete keys that refer to invData[id][key]; then
-      // tack .keys[i] onto the end of each and add them to the list.
-      allKeys = allKeys.concat(
-          this.getKeys_(parseInt(invId), seen).map(function(prefix) {
-            return prefix + '.' + key;
-          })
-          );
-    }
-  }
-
-  // Get prototypical direct descendants of this object.
-  var invProtos = this.invProtos[id];
-  if ( ! invProtos ) return allKeys;
-  for ( i = 0; i < invProtos.length; i++ ) {
-    var invProtoId = invProtos[i];
-    if ( seen[invProtoId] ) continue;
-    // Recurse: As above, except via prototype lookup (not property lookup).
-    allKeys = allKeys.concat(
-        this.getKeys_(parseInt(invProtoId), seen).map(function(prefix) {
-          return prefix + '.__proto__';
-        })
-        );
-  }
-
-  return allKeys;
-};
 
 // Interface method: Get object's key names, optionally filtered by
 // opt_predicate.
@@ -450,12 +431,10 @@ ObjectGraph.prototype.getObjectKeys = function(id, opt_predicate) {
 
 // Interface method: Get all keys that refer to an object id.
 ObjectGraph.prototype.getKeys = function(id) {
-  if ( this.keysCache[id] ) return this.keysCache[id].slice();
-  var keys = this.getKeys_(id, {}).sort(function(a, b) {
-    return a.length === b.length ? a > b : a.length - b.length;
-  });
-  this.keysCache[id] = keys;
-  return keys.slice();
+  // Doing one BFS for all key names is much more efficient than repeating it
+  // lazily. Trigger complete cache fill with getAllKeys().
+  let keys = this.getAllKeys()[id];
+  return keys ? keys.slice() : [];
 };
 
 // Interface method: Get shortest key that refers to an object id.
@@ -469,14 +448,34 @@ ObjectGraph.prototype.getAllKeys = function() {
   return this.allKeys_;
 };
 
+// Compute complete set of lookup keys for objects.
+// TODO: Doing this in reverse, exploiting cached prefixes would allow us to
+// be more incremental about this.
 ObjectGraph.prototype.getAllKeys_ = function() {
-  var ids = this.getAllIds();
-  var map = {};
-  for ( var i = 0; i < ids.length; i++ ) {
-    var id = ids[i];
-    map[id] = this.getKeys(id);
+  let q = [{id: this.root, key: this.key}];
+  let seen = {};
+  let strs = {};
+
+  for (let i = 0; i < q.length; i++) {
+    let item = q[i];
+    this.keysCache[item.id] = strs[item.id] = strs[item.id] || [];
+    strs[item.id].push(item.key);
+    if (seen[item.id]) continue;
+    seen[item.id] = true;
+    if (this.isType(item.id)) continue;
+    let keys = Object.getOwnPropertyNames(this.data[item.id]);
+    q.push.apply(
+      q,
+      keys.map(key => {
+        return {id: this.data[item.id][key], key: item.key + '.' + key};
+      }).concat([{
+        id: this.getPrototype(item.id),
+        key: item.key + '.__proto__',
+      }]).sort((a, b) => a.key.length - b.key.length)
+    );
   }
-  return map;
+
+  return strs;
 };
 
 // Interface method: Get all keys for all ids; returns a map of the form:
@@ -486,10 +485,11 @@ ObjectGraph.prototype.getAllKeysMap = function() {
 };
 
 ObjectGraph.prototype.getAllKeysMap_ = function() {
-  var ids = this.getAllIds();
+  var allKeys = this.getAllKeys();
   var map = {};
+  var ids = Object.getOwnPropertyNames(allKeys);
   for ( var i = 0; i < ids.length; i++ ) {
-    var keys = this.getKeys(ids[i]);
+    var keys = allKeys[ids[i]];
     for ( var j = 0; j < keys.length; j++ ) {
       map[keys[j]] = 1;
     }
