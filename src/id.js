@@ -22,10 +22,14 @@ module.exports = function(opts) {
 
   var key = opts.key || '$UID';
   var key__ = key + '__';
+  var start = typeof opts.start === 'number' ? opts.start : 10000;
+  var isValidId = opts.isValidId || function(id) {
+    return typeof id === 'number' && id >= start;
+  };
   var nextId = opts.nextId || (function() {
     // Leave space for "reserved IDs". Useful when values may mean
     // "object id or [some other id]".
-    var id = typeof opts.start === 'number' ? opts.start : 10000;
+    var id = start;
     return function() { return id++; };
   })();
 
@@ -47,33 +51,56 @@ module.exports = function(opts) {
     return id;
   }
 
-  Object.defineProperty(
-    Object.prototype,
-    key,
-    {
-      get: function() {
-        if ( ! this.hasOwnProperty(key__) ) {
-          try {
-            Object.defineProperty(this, key__, {
-              value: nextId(),
-              enumerable: false,
-            });
-          } catch (e) {
-            return getPairedId(this);
-          }
-        }
-
-        // Catch corner case: own property of this[key__] was not actually
-        // created!
-        if ( this.__proto__ && this.__proto__[key] === this[key__] ) {
+  var descriptor = {
+    get: function() {
+      if ( ! this.hasOwnProperty(key__) ) {
+        try {
+          Object.defineProperty(this, key__, {
+            value: nextId(),
+            enumerable: false,
+          });
+        } catch (e) {
           return getPairedId(this);
-        } else {
-          return this.$UID__;
         }
-      },
-      enumerable: false,
-    }
-  );
+      }
 
-  return nextId;
+      // Catch corner case: own property of this[key__] was not actually
+      // created!
+      if ( this.__proto__ && this.__proto__[key] === this[key__] ) {
+        return getPairedId(this);
+      } else {
+        return this.$UID__;
+      }
+    },
+    enumerable: false,
+  };
+
+  Object.defineProperty(Object.prototype, key, descriptor);
+
+  function getId(v) {
+    // Usual case: property generates id.
+    var id = v[key];
+    if ( isValidId(id) ) return id;
+
+    console.log('!!! Extra id property define');
+
+    // Corner case: Object doesn't descend from Object.prototype. Define
+    // property manually.
+    Object.defineProperty(v, key, descriptor);
+    id = v[key];
+    if ( isValidId(id) ) return id;
+
+    console.log('!!! Fallback on paired id');
+
+    // Last ditch effort: Just store a paired id.
+    return getPairedId(v);
+  }
+
+  return {
+    key: key,
+    key__: key__,
+    isValidId: isValidId,
+    nextId: nextId,
+    getId: getId,
+  };
 };

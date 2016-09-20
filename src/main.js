@@ -16,8 +16,6 @@
  */
 'use strict';
 
-require('./id.js')();
-
 module.exports = {
   NameRewriter: require('./NameRewriter.js'),
   TaskQueue: require('./TaskQueue.js'),

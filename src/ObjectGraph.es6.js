@@ -18,6 +18,7 @@
 
 var _ = require('lodash');
 
+var uid = require('./id.js')();
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
 var facade = require('facade-js');
@@ -61,9 +62,18 @@ ObjectGraph.prototype.types = ObjectGraph.types = {
 };
 
 // Never visit/store these object keys.
-ObjectGraph.prototype.blacklistedKeys = [ '$UID', '$UID__', '__proto__' ];
-// Never visit/store these objects.
-ObjectGraph.prototype.blacklistedObjects = [];
+ObjectGraph.prototype.blacklistedKeys = [ uid.key, uid.key__, '__proto__' ];
+// Never visit/store these objects. Defaults to some known namespace polluters
+// that we rely on.
+// TODO: File bugs against offenders!
+ObjectGraph.prototype.blacklistedObjects = [
+  '_', // lodash.
+  '__core-js_shared__', // Part of core-js in babel-runtime.
+].map(function(key) {
+  return this[key];
+}.bind(typeof window === 'undefined' ? global : window)).filter(
+  value => value !== undefined
+);
 
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
@@ -89,6 +99,7 @@ ObjectGraph.prototype.initLazyData = function() {
 
 ObjectGraph.prototype.storeObject = function(id) {
   console.assert( ! this.data[id] , 'Repeated store-id');
+  console.assert(typeof id === 'number', 'Illegal object id');
   this.data[id] = {};
   return this.data[id];
 };
@@ -114,7 +125,7 @@ ObjectGraph.prototype.maybeSkip = function(o) {
   if ( o === null ) return this.types['null'];
   var typeOf = typeof o;
   if ( this.types[typeOf] ) return this.types[typeOf];
-  if ( this.data[o.$UID] ) return o.$UID;
+  if ( this.data[uid.getId(o)] ) return uid.getId(o);
 
   return null;
 };
@@ -150,7 +161,7 @@ ObjectGraph.prototype.rewriteName = function(name) {
 
 // Visit the prototype of o, given its dataMap.
 ObjectGraph.prototype.visitPrototype = function(o, dataMap) {
-  this.storeProto(o.$UID, this.visitObject(o.__proto__));
+  this.storeProto(uid.getId(o), this.visitObject(o.__proto__));
 };
 
 // Visit the property of o named propertyName, given o's dataMap.
@@ -185,7 +196,7 @@ ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
           );
     } else {
       console.warn('Missing descriptor for name "' + name +
-          '" on object ' + o.$UID);
+                   '" on object ' + uid.getId(o));
     }
   }
 };
@@ -198,12 +209,14 @@ ObjectGraph.prototype.visitObject = function(o) {
   var skip = this.maybeSkip(o);
   if ( skip !== null ) return skip;
 
+  var id = uid.getId(o);
+
   // Store function-type info in a special place. We visit them like any
   // other object with identity, so their id will not indicate their type.
-  if ( typeof o === 'function' ) this.functions.push(o.$UID);
+  if ( typeof o === 'function' ) this.functions.push(id);
 
-  var dataMap = this.storeObject(o.$UID);
-  var metadataMap = this.storeMetadata(o.$UID);
+  var dataMap = this.storeObject(id);
+  var metadataMap = this.storeMetadata(id);
 
   // Enqueue work: Visit o's prototype and property descriptors.
   this.q.enqueue(this.visitPrototype.bind(this, o, dataMap));
@@ -219,7 +232,7 @@ ObjectGraph.prototype.visitObject = function(o) {
     this.q.enqueue(this.visitProperty.bind(this, o, names[i], dataMap));
   }
 
-  return o.$UID;
+  return id;
 };
 
 // Interface method: Clone an ObjectGraph.
@@ -410,7 +423,9 @@ ObjectGraph.prototype.getAllIds_ = function() {
   var strIds = Object.getOwnPropertyNames(this.data);
   for ( var i = 0; i < strIds.length; i++ ) {
     if ( this.isKeyBlacklisted(strIds[i]) ) continue;
-    ids.push(parseInt(strIds[i]));
+    var id = parseInt(strIds[i]);
+    console.assert(!isNaN(id), 'Non-numeric id');
+    ids.push(id);
   }
   return ids.sort();
 };
