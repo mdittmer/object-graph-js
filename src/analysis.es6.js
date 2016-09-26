@@ -90,6 +90,12 @@ function difference(g1, g2, match = anyAnyGraphMatcher) {
 }
 
 function intersectDifference(inGraphs, exGraphs, match = anyAnyGraphMatcher) {
+  // Must start with some graph.
+  console.assert(inGraphs.length > 0);
+  // Edge case: Clone lone graph when no other graphs passed in.
+  if (inGraphs.length === 1 && exGraphs.length === 0)
+    return inGraphs[0].clone();
+
   return _.reduce(
     exGraphs, (g1, g2) => difference(g1, g2, match),
     _.reduce(inGraphs, (g1, g2) => intersection(g1, g2, match))
