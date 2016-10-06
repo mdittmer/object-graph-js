@@ -47,7 +47,7 @@ ObjectGraph.prototype.userAgent = typeof navigator !== 'undefined' ?
   navigator.userAgent :
   typeof process !== 'undefined' ? 'NodeJS/' + process.version : 'Unknown';
 // Map of primitive types (leaves in object graph).
-// NOTE: It must be impossible for $UIDs of visited objects to take on these
+// NOTE: It must be impossible for +UIDs of visited objects to take on these
 // values.
 ObjectGraph.prototype.FIRST_TYPE = ObjectGraph.FIRST_TYPE = 1;
 ObjectGraph.prototype.LAST_TYPE = ObjectGraph.LAST_TYPE = 7;
@@ -170,7 +170,7 @@ ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
   try {
     dataMap[name] = this.visitObject(o[propertyName]);
   } catch (e) {
-    // console.warn('Error accessing', o.$UID, '.', propertyName);
+    // console.warn('Error accessing', o['+UID'], '.', propertyName);
     dataMap[name] = this.types.exception;
   }
 };
@@ -275,7 +275,7 @@ ObjectGraph.prototype.capture = function(o, opts) {
 
   this.timestamp = null;
   this.key = opts.key || '';
-  this.root = typeof o === 'object' && o !== null ? o.$UID : o;
+  this.root = typeof o === 'object' && o !== null ? o['+UID'] : o;
   this.data = {};
   this.metadata = {};
   this.protos = {};

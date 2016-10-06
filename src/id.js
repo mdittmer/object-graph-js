@@ -20,7 +20,7 @@
 module.exports = function(opts) {
   opts = opts || {};
 
-  var key = opts.key || '$UID';
+  var key = opts.key || '+UID';
   var key__ = key + '__';
   var start = typeof opts.start === 'number' ? opts.start : 10000;
   var isValidId = opts.isValidId || function(id) {
@@ -69,7 +69,7 @@ module.exports = function(opts) {
       if ( this.__proto__ && this.__proto__[key] === this[key__] ) {
         return getPairedId(this);
       } else {
-        return this.$UID__;
+        return this[key__];
       }
     },
     enumerable: false,
