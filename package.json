@@ -21,6 +21,7 @@
   "homepage": "https://github.com/mdittmer/object-graph-js#readme",
   "dependencies": {
     "facade-js": "git://github.com/mdittmer/facade-js.git",
+    "id-js": "git://github.com/mdittmer/id-js.git",
     "lodash": "^4.15.0",
     "ya-stdlib-js": "git://github.com/mdittmer/ya-stdlib-js.git"
   }

@@ -18,7 +18,7 @@
 
 var _ = require('lodash');
 
-var uid = require('./id.js')();
+var uid = require('id-js')();
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
 var facade = require('facade-js');
