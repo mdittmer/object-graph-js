@@ -74,6 +74,10 @@ ObjectGraph.prototype.blacklistedObjects = [
 }.bind(typeof window === 'undefined' ? global : window)).filter(
   value => value !== undefined
 );
+ObjectGraph.prototype.blacklistedTypes = [
+  'MimeType'   // causing error in some previous versions of Chrome
+]
+
 
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
@@ -148,6 +152,10 @@ ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
 ObjectGraph.prototype.isKeyBlacklisted = function(name) {
   for ( var i = 0; i < this.blacklistedKeys.length; i++ ) {
     if ( name === this.blacklistedKeys[i] ) return true;
+  }
+  for ( var i = 0; i < this.blacklistedTypes.length; i++ ) {
+    if ( value && value.constructor &&
+      value.constructor.name === this.blacklistedTypes[i] ) return true;
   }
   return false;
 };
