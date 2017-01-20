@@ -74,9 +74,10 @@ ObjectGraph.prototype.blacklistedObjects = [
 }.bind(typeof window === 'undefined' ? global : window)).filter(
   value => value !== undefined
 );
-ObjectGraph.prototype.blacklistedTypes = [
-  'MimeType'   // MimeType Object initiates a process of continually
-               // extending the object graphs in Chrome (version <= 42).
+ObjectGraph.prototype.blacklistedProperties = [
+  ['MimeType', 'enabledPlugin']
+    // MimeType's enabledPlugin will return a new MimeType object in Chrome
+    // (version<=42), which will cause a infinite recursion in the object graphs.
 ]
 
 
@@ -146,6 +147,11 @@ ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
   for ( var i = 0; i < this.blacklistedObjects.length; i++ ) {
     if ( value === this.blacklistedObjects[i] ) return true;
   }
+  for ( var i = 0; i < this.blacklistedProperties.length; i++ ) {
+    if ( o.constructor && key === this.blacklistedProperties[i][1] &&
+      o.constructor.name === this.blacklistedProperties[i][0] )
+        return true;
+  }
   return false;
 };
 
@@ -153,10 +159,6 @@ ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
 ObjectGraph.prototype.isKeyBlacklisted = function(name) {
   for ( var i = 0; i < this.blacklistedKeys.length; i++ ) {
     if ( name === this.blacklistedKeys[i] ) return true;
-  }
-  for ( var i = 0; i < this.blacklistedTypes.length; i++ ) {
-    if ( value && value.constructor &&
-      value.constructor.name === this.blacklistedTypes[i] ) return true;
   }
   return false;
 };
