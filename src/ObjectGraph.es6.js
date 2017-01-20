@@ -75,7 +75,8 @@ ObjectGraph.prototype.blacklistedObjects = [
   value => value !== undefined
 );
 ObjectGraph.prototype.blacklistedTypes = [
-  'MimeType'   // causing error in some previous versions of Chrome
+  'MimeType'   // MimeType Object initiates a process of continually
+               // extending the object graphs in Chrome
 ]
 
 
