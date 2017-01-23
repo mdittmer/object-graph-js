@@ -74,6 +74,12 @@ ObjectGraph.prototype.blacklistedObjects = [
 }.bind(typeof window === 'undefined' ? global : window)).filter(
   value => value !== undefined
 );
+ObjectGraph.prototype.blacklistedProperties = [
+  ['MimeType', 'enabledPlugin']
+    // MimeType's enabledPlugin will return a new MimeType object in Chrome
+    // (version<=42), which will cause a infinite recursion in the object graphs.
+]
+
 
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
@@ -140,6 +146,11 @@ ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
   }
   for ( var i = 0; i < this.blacklistedObjects.length; i++ ) {
     if ( value === this.blacklistedObjects[i] ) return true;
+  }
+  for ( var i = 0; i < this.blacklistedProperties.length; i++ ) {
+    if ( o.constructor && key === this.blacklistedProperties[i][1] &&
+      o.constructor.name === this.blacklistedProperties[i][0] )
+        return true;
   }
   return false;
 };
