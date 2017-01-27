@@ -434,13 +434,20 @@ ObjectGraph.prototype.getFunctions = function() {
   return Object.keys(this.functions);
 };
 
+// Interface method: Get the name of given function id.
 ObjectGraph.prototype.getFunctionName = function(id) {
   return this.functions[id];
 };
 
-ObjectGraph.prototype.getProto = function(id) {
-  return this.protos[id];
+// Interface method: get the root of object graph.
+ObjectGraph.prototype.getRoot = function() {
+  return this.root;
 };
+
+// Interface method: Get attribute and id belong to given id.
+ObjectGraph.prototype.getPropertiesIds = function(id){
+  return this.data[id]
+}
 
 // Interface method: Get all ids in the system.
 ObjectGraph.prototype.getAllIds = function() {
@@ -522,8 +529,7 @@ ObjectGraph.prototype.getAllKeys_ = function() {
   return strs;
 };
 
-// Interface method: Get all keys for all ids; returns a map of the form:
-// { id: [keys] }.
+// Interface method: Get All existing keys
 ObjectGraph.prototype.getAllKeysMap = function() {
   return this.allKeysMap_;
 };
@@ -606,7 +612,8 @@ module.exports = facade(ObjectGraph, {
     clone: 1, cloneWithout: 1, capture: 1, removeIds: 1, removePrimitives: 1,
     isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
     getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
-    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1,
+    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1, getFunctionName: 1,
+    getRoot: 1, getPropertiesIds: 1,
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
