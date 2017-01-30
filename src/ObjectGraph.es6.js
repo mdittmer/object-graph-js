@@ -228,13 +228,13 @@ ObjectGraph.prototype.visitObject = function(o) {
   // other object with identity, so their id will not indicate their type.
   if ( typeof o === 'function' ) {
     if(o.name){
-      this.functions[id] = o.name;
+      this.metadata.functions[id] = o.name;
     } else {
       // In IE, function does not have name property,
       // have to use regular expression to find function name.
-      this.functions[id] = o.toString().
+      this.metadata.functions[id] = o.toString().
         split(/[\s\(]/g).filter(
-          function(a){return a!==''}
+          function(a) {return a !== ''}
         )[1];
     }
   }
@@ -273,7 +273,6 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   clone.data = _.cloneDeep(this.data);
   clone.metadata = _.cloneDeep(this.metadata);
   clone.protos = _.cloneDeep(this.protos);
-  clone.functions = _.cloneDeep(this.functions);
 
   clone.initLazyData();
 
@@ -303,7 +302,7 @@ ObjectGraph.prototype.capture = function(o, opts) {
   this.data = {};
   this.metadata = {};
   this.protos = {};
-  this.functions = {};
+  this.metadata.functions = {};
   this.keysCache = {};
 
   this.q.onDone = function() {
@@ -382,8 +381,8 @@ ObjectGraph.prototype.removeIds = function(ids) {
       this.removeData_(id);
     }
     for (let id of ids) {
-      if (id in this.functions) {
-        delete this.functions[id];
+      if (id in this.metadata.functions) {
+        delete this.metadata.functions[id];
       }
     }
     // Object graph has changed! Flush lazily computed data.
@@ -426,17 +425,17 @@ ObjectGraph.prototype.getType = function(id) {
 // Interface method: Does id refer to a function?
 ObjectGraph.prototype.isFunction = function(id) {
   if ( ! id ) return false;
-  return id in this.functions;
+  return id in this.metadata.functions;
 };
 
 // Interface method: Get ids of all objects that are functions.
 ObjectGraph.prototype.getFunctions = function() {
-  return Object.keys(this.functions);
+  return Object.keys(this.metadata.functions);
 };
 
 // Interface method: Get the name of given function id.
 ObjectGraph.prototype.getFunctionName = function(id) {
-  return this.functions[id];
+  return this.metadata.functions[id];
 };
 
 // Interface method: get the root of object graph.
@@ -446,8 +445,8 @@ ObjectGraph.prototype.getRoot = function() {
 
 // Interface method: Get attribute and id belong to given id.
 ObjectGraph.prototype.getPropertiesIds = function(id){
-  return this.data[id]
-}
+  return Object.assign({}, this.data[id]);
+};
 
 // Interface method: Get all ids in the system.
 ObjectGraph.prototype.getAllIds = function() {
@@ -583,7 +582,7 @@ ObjectGraph.prototype.lookup = function(key, opt_root) {
 // What to store when invoking toJSON.
 ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
                          'protos', 'types', 'keys', 'blacklistedKeys',
-                         'functions', 'metadata' ].sort();
+                         'metadata' ].sort();
 
 // Store minimal data for serialization.
 ObjectGraph.prototype.toJSON = function() {
