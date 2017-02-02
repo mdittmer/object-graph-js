@@ -70,7 +70,7 @@ ObjectGraph.prototype.blacklistedObjects = [
   '_', // lodash.
   '__core-js_shared__', // Part of core-js in babel-runtime.
   'webpackJsonpCallback',
-  'webpackJsonp'.       // Webpack generated scripts.
+  'webpackJsonp'        // Webpack generated scripts.
 ].map(function(key) {
   return this[key];
 }.bind(typeof window === 'undefined' ? global : window)).filter(
