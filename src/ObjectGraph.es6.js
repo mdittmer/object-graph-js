@@ -226,7 +226,18 @@ ObjectGraph.prototype.visitObject = function(o) {
 
   // Store function-type info in a special place. We visit them like any
   // other object with identity, so their id will not indicate their type.
-  if ( typeof o === 'function' ) this.functions.push(id);
+  if ( typeof o === 'function' ) {
+    if(o.name){
+      this.functions[id] = o.name;
+    } else {
+      // In IE, function does not have name property,
+      // have to use regular expression to find function name.
+      this.functions[id] = o.toString().
+        split(/[\s\(]/g).filter(
+          function(a) {return a !== ''}
+        )[1];
+    }
+  }
 
   var dataMap = this.storeObject(id);
   var metadataMap = this.storeMetadata(id);
@@ -262,7 +273,7 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   clone.data = _.cloneDeep(this.data);
   clone.metadata = _.cloneDeep(this.metadata);
   clone.protos = _.cloneDeep(this.protos);
-  clone.functions = Array.from(this.functions);
+  clone.functions = _.cloneDeep(this.functions);
 
   clone.initLazyData();
 
@@ -292,7 +303,7 @@ ObjectGraph.prototype.capture = function(o, opts) {
   this.data = {};
   this.metadata = {};
   this.protos = {};
-  this.functions = [];
+  this.functions = {};
   this.keysCache = {};
 
   this.q.onDone = function() {
@@ -370,8 +381,11 @@ ObjectGraph.prototype.removeIds = function(ids) {
     for (let id of ids) {
       this.removeData_(id);
     }
-    this.functions = _.difference(this.functions, ids);
-
+    for (let id of ids) {
+      if (id in this.functions) {
+        delete this.functions[id];
+      }
+    }
     // Object graph has changed! Flush lazily computed data.
     this.initLazyData();
 
@@ -412,18 +426,27 @@ ObjectGraph.prototype.getType = function(id) {
 // Interface method: Does id refer to a function?
 ObjectGraph.prototype.isFunction = function(id) {
   if ( ! id ) return false;
-
-  // TODO: Should we store a lazy map of these to make this faster?
-  for ( var i = 0; i < this.functions.length; i++ ) {
-    if ( id === this.functions[i] ) return true;
-  }
-
-  return false;
+  return id in this.functions;
 };
 
 // Interface method: Get ids of all objects that are functions.
 ObjectGraph.prototype.getFunctions = function() {
-  return this.functions.slice();
+  return Object.keys(this.functions);
+};
+
+// Interface method: Get the name of given function id.
+ObjectGraph.prototype.getFunctionName = function(id) {
+  return this.functions[id];
+};
+
+// Interface method: get the root of object graph.
+ObjectGraph.prototype.getRoot = function() {
+  return this.root;
+};
+
+// Interface method: Get attribute and id belong to given id.
+ObjectGraph.prototype.getPropertiesIds = function(id){
+  return Object.assign({}, this.data[id]);
 };
 
 // Interface method: Get all ids in the system.
@@ -506,8 +529,7 @@ ObjectGraph.prototype.getAllKeys_ = function() {
   return strs;
 };
 
-// Interface method: Get all keys for all ids; returns a map of the form:
-// { id: [keys] }.
+// Interface method: Get All existing keys
 ObjectGraph.prototype.getAllKeysMap = function() {
   return this.allKeysMap_;
 };
@@ -561,7 +583,7 @@ ObjectGraph.prototype.lookup = function(key, opt_root) {
 // What to store when invoking toJSON.
 ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
                          'protos', 'types', 'keys', 'blacklistedKeys',
-                         'functions', 'metadata' ].sort();
+                         'metadata', 'functions' ].sort();
 
 // Store minimal data for serialization.
 ObjectGraph.prototype.toJSON = function() {
@@ -590,7 +612,8 @@ module.exports = facade(ObjectGraph, {
     clone: 1, cloneWithout: 1, capture: 1, removeIds: 1, removePrimitives: 1,
     isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
     getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
-    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1,
+    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1, getFunctionName: 1,
+    getRoot: 1, getPropertiesIds: 1,
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
