@@ -226,7 +226,7 @@ ObjectGraph.prototype.visitObject = function(o) {
 
   // Store function-type info in a special place. We visit them like any
   // other object with identity, so their id will not indicate their type.
-  if ( typeof o === 'function' ) {
+  if ( typeof o === 'function' || o instanceof Function) {
     if(o.name){
       this.functions[id] = o.name;
     } else {
