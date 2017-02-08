@@ -62,7 +62,13 @@ ObjectGraph.prototype.types = ObjectGraph.types = {
 };
 
 // Never visit/store these object keys.
-ObjectGraph.prototype.blacklistedKeys = [ uid.key, uid.key__, '__proto__' ];
+ObjectGraph.prototype.blacklistedKeys = [
+  uid.key,
+  uid.key__,
+  '__proto__',
+  '$UID',    // $UID and $UID__ are unique ids assigned by FOAM Framework.
+  '$UID__',  // TODO: Upstream id-js to FOAM so we don't have two unique ids.
+  ];
 // Never visit/store these objects. Defaults to some known namespace polluters
 // that we rely on.
 // TODO: File bugs against offenders!
@@ -70,7 +76,8 @@ ObjectGraph.prototype.blacklistedObjects = [
   '_', // lodash.
   '__core-js_shared__', // Part of core-js in babel-runtime.
   'webpackJsonpCallback',
-  'webpackJsonp'        // Webpack generated scripts.
+  'webpackJsonp',       // Webpack generated scripts.
+  'foam',               // Global object exposed by FOAM Framework.
 ].map(function(key) {
   return this[key];
 }.bind(typeof window === 'undefined' ? global : window)).filter(
