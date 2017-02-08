@@ -587,6 +587,12 @@ ObjectGraph.prototype.lookup = function(key, opt_root) {
   return this.lookup_(key.split('.'), root);
 };
 
+// Look up metadata for a property belong to the given id.
+ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
+  var root = opt_id || this.root;
+  return Object.assign({}, this.metadata[root][property]);
+}
+
 // What to store when invoking toJSON.
 ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
                          'protos', 'types', 'keys', 'blacklistedKeys',
@@ -620,7 +626,7 @@ module.exports = facade(ObjectGraph, {
     isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
     getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
     getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1, getFunctionName: 1,
-    getRoot: 1, getPropertiesIds: 1,
+    getRoot: 1, getPropertiesIds: 1, lookupMetaData: 1,
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
