@@ -143,7 +143,6 @@ ObjectGraph.prototype.maybeSkip = function(o) {
   var typeOf = typeof o;
   if ( this.types[typeOf] ) return this.types[typeOf];
   if ( this.data[uid.getId(o)] ) return uid.getId(o);
-
   return null;
 };
 
@@ -215,7 +214,7 @@ ObjectGraph.prototype.visitInstance = function(o, dataMap) {
 ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
   var name = this.rewriteName(propertyName);
   try {
-    dataMap[name] = this.visitObject(o[propertyName], propertyName === 'prototype');
+    dataMap[name] = this.visitObject(o[propertyName]);
   } catch (e) {
     // console.warn('Error accessing', o['+UID'], '.', propertyName);
     dataMap[name] = this.types.exception;
@@ -277,9 +276,9 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
 
   var dataMap = this.storeObject(id);
   var metadataMap = this.storeMetadata(id);
+  this.visitPrototype(o, dataMap);
 
-  // Enqueue work: Visit o's prototype and property descriptors.
-  this.q.enqueue(this.visitPrototype.bind(this, o, dataMap));
+  // Enqueue work: Visit o's property descriptors.
   this.q.enqueue(this.visitPropertyDescriptors.bind(this, o,
                                                     metadataMap));
 
