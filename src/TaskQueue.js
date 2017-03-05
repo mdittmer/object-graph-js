@@ -54,7 +54,12 @@ TaskQueue.prototype.flush = function() {
   else                     this.onDone();
 };
 
+// Return if the task queue is empty.
+TaskQueue.prototype.empty = function() {
+  return this.q.length === 0;
+}
+
 module.exports = facade(TaskQueue, {
   properties: [ 'maxDequeueSize', 'onTick', 'onDone' ],
-  methods: { enqueue: 1, flush: 1 },
+  methods: { enqueue: 1, flush: 1, empty: 1 },
 });
