@@ -33,6 +33,7 @@ function ObjectGraph(opts) {
 
 ObjectGraph.prototype.init = function(opts) {
   this.q = new TaskQueue(opts);
+  this.instanceQueue = new TaskQueue();
   this.busy = false;
   this.blacklistedObjects = opts.blacklistedObjects ||
     this.blacklistedObjects.slice();
@@ -78,16 +79,17 @@ ObjectGraph.prototype.blacklistedObjects = [
   'webpackJsonpCallback',
   'webpackJsonp',       // Webpack generated scripts.
   'foam',               // Global object exposed by FOAM Framework.
+  'com',                // Global object exposed by FOAM Framework.
 ].map(function(key) {
   return this[key];
 }.bind(typeof window === 'undefined' ? global : window)).filter(
   value => value !== undefined
 );
 ObjectGraph.prototype.blacklistedProperties = [
-  ['MimeType', 'enabledPlugin']
+  ['MimeType', 'enabledPlugin'],
     // MimeType's enabledPlugin will return a new MimeType object in Chrome
     // (version<=42), which will cause a infinite recursion in the object graphs.
-]
+];
 
 
 ObjectGraph.prototype.initLazyData = function() {
@@ -181,14 +183,39 @@ ObjectGraph.prototype.rewriteName = function(name) {
 
 // Visit the prototype of o, given its dataMap.
 ObjectGraph.prototype.visitPrototype = function(o, dataMap) {
-  this.storeProto(uid.getId(o), this.visitObject(o.__proto__));
+  this.storeProto(uid.getId(o), this.visitObject(o.__proto__, {proto: true}));
 };
+
+// getProtoPropertyNames returns all inherited properties
+// that have exception values in their prototypes.
+ObjectGraph.prototype.getProtoPropertyNames = function(id) {
+  var protoId = this.getPrototype(id);
+  if (protoId && protoId >= this.root) {
+    var exceptionProps = this.getObjectKeys(id, (prop, key) =>
+      prop === this.types.exception
+    );
+    return exceptionProps.concat(this.getProtoPropertyNames(protoId));
+  }
+  return [];
+}
+
+// Visit the inherited properties of o, given its dataMap.
+// o must be an instance object.
+ObjectGraph.prototype.visitInstance = function(o, dataMap) {
+  var inheritedProps = this.getProtoPropertyNames(uid.getId(o));
+  for ( var i = 0; i < inheritedProps.length; i++ ) {
+    if ( this.isKeyBlacklisted(inheritedProps[i]) ||
+        this.isPropertyBlacklisted(o, inheritedProps[i]) ) continue;
+    // Enqueue work: Visit o's property.
+    this.q.enqueue(this.visitProperty.bind(this, o, inheritedProps[i], dataMap));
+  }
+}
 
 // Visit the property of o named propertyName, given o's dataMap.
 ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
   var name = this.rewriteName(propertyName);
   try {
-    dataMap[name] = this.visitObject(o[propertyName]);
+    dataMap[name] = this.visitObject(o[propertyName], propertyName === 'prototype');
   } catch (e) {
     // console.warn('Error accessing', o['+UID'], '.', propertyName);
     dataMap[name] = this.types.exception;
@@ -224,7 +251,9 @@ ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
 // Visit an object, o. Return an id for the object, which may contain type
 // information (e.g., number, boolean, null), or indicate the unique identity
 // of the object itself.
-ObjectGraph.prototype.visitObject = function(o) {
+ObjectGraph.prototype.visitObject = function(o, opt) {
+  opt = opt || {};
+  let proto = opt.proto || false;
   // Don't process object unless we have to.
   var skip = this.maybeSkip(o);
   if ( skip !== null ) return skip;
@@ -254,6 +283,8 @@ ObjectGraph.prototype.visitObject = function(o) {
   this.q.enqueue(this.visitPropertyDescriptors.bind(this, o,
                                                     metadataMap));
 
+  // if o is an instance, visited all inherited property.
+
   // Visit all of o's properties (skipping blacklisted ones).
   var names = Object.getOwnPropertyNames(o);
   for ( var i = 0; i < names.length; i++ ) {
@@ -261,6 +292,12 @@ ObjectGraph.prototype.visitObject = function(o) {
         this.isPropertyBlacklisted(o, names[i]) ) continue;
     // Enqueue work: Visit o's property.
     this.q.enqueue(this.visitProperty.bind(this, o, names[i], dataMap));
+  }
+
+  // A instance is an object that is not a __proto__ of other object,
+  // and it does not have constructor property.
+  if (proto !== true && !o.hasOwnProperty('constructor') && typeof o === 'object') {
+    this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap))
   }
 
   return id;
@@ -316,9 +353,17 @@ ObjectGraph.prototype.capture = function(o, opts) {
   this.q.onDone = function() {
     this.timestamp = (new Date()).getTime();
     this.initLazyData();
-    prevOnDone(this);
     opts.onDone && opts.onDone(this);
     this.busy = false;
+    this.instanceQueue.onDone = function() {
+      if (!this.q.empty()) this.q.flush();
+      else prevOnDone(this);
+    }.bind(this);
+    this.q.onDone = function() {
+      if (!this.instanceQueue.empty()) this.instanceQueue.flush();
+      else prevOnDone(this);
+    }.bind(this);
+    this.instanceQueue.flush();
   }.bind(this);
 
   // Edge case: Passed-in object is blacklisted. This is not caught by
