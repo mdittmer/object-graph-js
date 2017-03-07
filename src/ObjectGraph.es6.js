@@ -184,10 +184,6 @@ ObjectGraph.prototype.rewriteName = function(name) {
 
 // Visit the prototype of o, given its dataMap.
 ObjectGraph.prototype.visitPrototype = function(o, dataMap) {
-  if ( this.protos[uid.getId(o)] !== undefined ) {
-    console.log(uid.getId(o));
-    return;
-  }
   this.storeProto(uid.getId(o), this.visitObject(o.__proto__, {proto: true}));
 };
 
@@ -302,7 +298,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   // and it does not have constructor property.
   // TODO: This strategy isn't sound, whether a object is a prototype or not
   // is not sure until the entire object is visited.
-  if ( proto !== true && !o.hasOwnProperty('constructor') &&
+  if ( proto !== true && ! o.hasOwnProperty('constructor') &&
     typeof o === 'object' ) {
     this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap))
   }
