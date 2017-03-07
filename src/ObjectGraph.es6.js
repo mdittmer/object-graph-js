@@ -24,6 +24,7 @@ var remap = stdlib.remap;
 var facade = require('facade-js');
 var NameRewriter = require('./NameRewriter.js');
 var TaskQueue = require('./TaskQueue.js');
+var emptyArray = [];
 
 // Object identity and/or primitive type data storage.
 function ObjectGraph(opts) {
@@ -33,6 +34,7 @@ function ObjectGraph(opts) {
 
 ObjectGraph.prototype.init = function(opts) {
   this.q = new TaskQueue(opts);
+  // TODO: make instance explorer into a plugin or extension.
   this.instanceQueue = new TaskQueue();
   this.busy = false;
   this.blacklistedObjects = opts.blacklistedObjects ||
@@ -182,21 +184,25 @@ ObjectGraph.prototype.rewriteName = function(name) {
 
 // Visit the prototype of o, given its dataMap.
 ObjectGraph.prototype.visitPrototype = function(o, dataMap) {
+  if ( this.protos[uid.getId(o)] !== undefined ) {
+    console.log(uid.getId(o));
+    return;
+  }
   this.storeProto(uid.getId(o), this.visitObject(o.__proto__, {proto: true}));
 };
 
 // getProtoPropertyNames returns all inherited properties
 // that have exception values in their prototypes.
+// We assume that the thrown exception was a TypeError indicating that the
+// method expected an instance, not the prototype to be this on invocation.
 ObjectGraph.prototype.getProtoPropertyNames = function(id) {
   var protoId = this.getPrototype(id);
-  if (protoId && protoId >= this.root) {
-    var exceptionProps = this.getObjectKeys(id, (prop, key) =>
-      prop === this.types.exception
-    );
-    return exceptionProps.concat(this.getProtoPropertyNames(protoId));
-  }
-  return [];
-}
+  if ( ! protoId || this.isType(protoId) ) return emptyArray;
+  var exceptionProps = this.getObjectKeys(id, (prop, key) =>
+    prop === this.types.exception
+  );
+  return exceptionProps.concat(this.getProtoPropertyNames(protoId));
+};
 
 // Visit the inherited properties of o, given its dataMap.
 // o must be an instance object.
@@ -223,7 +229,6 @@ ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
 
 ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
   var names = Object.getOwnPropertyNames(o);
-
   // Visit all of o's property descriptors (skipping blacklisted
   // properties).
   for ( var i = 0; i < names.length; i++ ) {
@@ -262,7 +267,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   // Store function-type info in a special place. We visit them like any
   // other object with identity, so their id will not indicate their type.
   if ( typeof o === 'function' || o instanceof Function ) {
-    if(o.name){
+    if ( o.name ) {
       this.functions[id] = o.name;
     } else {
       // In IE, function does not have name property,
@@ -276,13 +281,11 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
 
   var dataMap = this.storeObject(id);
   var metadataMap = this.storeMetadata(id);
-  this.visitPrototype(o, dataMap);
 
-  // Enqueue work: Visit o's property descriptors.
+  // Enqueue work: Visit o's prototype and property descriptors.
+  this.q.enqueue(this.visitPrototype.bind(this, o, dataMap));
   this.q.enqueue(this.visitPropertyDescriptors.bind(this, o,
                                                     metadataMap));
-
-  // if o is an instance, visited all inherited property.
 
   // Visit all of o's properties (skipping blacklisted ones).
   var names = Object.getOwnPropertyNames(o);
@@ -295,7 +298,10 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
 
   // A instance is an object that is not a __proto__ of other object,
   // and it does not have constructor property.
-  if (proto !== true && !o.hasOwnProperty('constructor') && typeof o === 'object') {
+  // TODO: This strategy isn't sound, whether a object is a prototype or not
+  // is not sure until the entire object is visited.
+  if ( proto !== true && !o.hasOwnProperty('constructor') &&
+    typeof o === 'object' ) {
     this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap))
   }
 
@@ -355,11 +361,11 @@ ObjectGraph.prototype.capture = function(o, opts) {
     opts.onDone && opts.onDone(this);
     this.busy = false;
     this.instanceQueue.onDone = function() {
-      if (!this.q.empty()) this.q.flush();
+      if ( ! this.q.empty() ) this.q.flush();
       else prevOnDone(this);
     }.bind(this);
     this.q.onDone = function() {
-      if (!this.instanceQueue.empty()) this.instanceQueue.flush();
+      if ( ! this.instanceQueue.empty() ) this.instanceQueue.flush();
       else prevOnDone(this);
     }.bind(this);
     this.instanceQueue.flush();
@@ -382,7 +388,7 @@ ObjectGraph.prototype.capture = function(o, opts) {
 
 ObjectGraph.prototype.removeRefs_ = function(id, ids) {
   let found = false;
-  if (this.invData[id]) {
+  if ( this.invData[id] ) {
     _.forOwn(
       this.invData[id],
       (refIds, refKey) => refIds.forEach(
@@ -393,7 +399,7 @@ ObjectGraph.prototype.removeRefs_ = function(id, ids) {
       )
     );
   }
-  if (this.invProtos[id]) {
+  if ( this.invProtos[id] ) {
     var newProto = id;
     while (!this.isType(newProto) &&
            ids.some(protoId => protoId === newProto))
@@ -413,7 +419,7 @@ ObjectGraph.prototype.removeData_ = function(id) {
   delete this.data[id];
   delete this.protos[id];
   // TODO: Out-of-date data appears to be causing the need for this check.
-  if (this.metadata !== undefined && this.metadata[id] !== undefined)
+  if ( this.metadata !== undefined && this.metadata[id] !== undefined )
     delete this.metadata[id];
   return true;
 };
@@ -433,7 +439,7 @@ ObjectGraph.prototype.removeIds = function(ids) {
       this.removeData_(id);
     }
     for (let id of ids) {
-      if (id in this.functions) {
+      if ( id in this.functions ) {
         delete this.functions[id];
       }
     }
@@ -470,7 +476,7 @@ ObjectGraph.prototype.isType = function(id) {
 
 // Interface method: Get type associated with id.
 ObjectGraph.prototype.getType = function(id) {
-  if (this.isType(id)) return this.invTypes[id];
+  if ( this.isType(id) ) return this.invTypes[id];
   return 'object';
 };
 
@@ -562,9 +568,9 @@ ObjectGraph.prototype.getAllKeys_ = function() {
     let item = q[i];
     this.keysCache[item.id] = strs[item.id] = strs[item.id] || [];
     strs[item.id].push(item.key);
-    if (seen[item.id]) continue;
+    if ( seen[item.id] ) continue;
     seen[item.id] = true;
-    if (this.isType(item.id)) continue;
+    if ( this.isType(item.id) ) continue;
     let keys = Object.getOwnPropertyNames(this.data[item.id]);
     q.push.apply(
       q,
