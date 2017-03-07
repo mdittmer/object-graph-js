@@ -255,6 +255,8 @@ ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
 // Visit an object, o. Return an id for the object, which may contain type
 // information (e.g., number, boolean, null), or indicate the unique identity
 // of the object itself.
+// opt contains information about this object.
+//     proto: if this object is visit as a __proto__ of other object.
 ObjectGraph.prototype.visitObject = function(o, opt) {
   opt = opt || {};
   let proto = opt.proto || false;
