@@ -16,8 +16,6 @@
  */
 'use strict';
 
-var _ = require('lodash');
-
 var uid = require('id-js')();
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
@@ -31,6 +29,18 @@ function ObjectGraph(opts) {
   opts = opts || {};
   this.init(opts);
 };
+
+function cloneDeep(obj) {
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+  let newObject = {}
+  var properties = Object.keys(obj);
+  for (var i = 0; i < properties.length; i++) {
+    newObject[properties[i]] = cloneDeep(obj[properties[i]]);
+  }
+  return newObject;
+}
 
 ObjectGraph.prototype.init = function(opts) {
   this.q = new TaskQueue(opts);
@@ -96,8 +106,10 @@ ObjectGraph.prototype.blacklistedProperties = [
 
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
-    let invTypes = remap['a:b=>b:[a]'](this.types);
-    _.forOwn(invTypes, (v, k, o) => o[k] = v[0]);
+    var invTypes = {};
+    Object.keys(this.types).map(type => {
+      invTypes[this.types[type]] = type;
+    })
     return invTypes;
   });
   stdlib.memo(this, 'invData',
@@ -317,10 +329,10 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
 
   clone.key = this.key;
   clone.root = this.root;
-  clone.data = _.cloneDeep(this.data);
-  clone.metadata = _.cloneDeep(this.metadata);
-  clone.protos = _.cloneDeep(this.protos);
-  clone.functions = _.cloneDeep(this.functions);
+  clone.data = cloneDeep(this.data);
+  clone.metadata = cloneDeep(this.metadata);
+  clone.protos = cloneDeep(this.protos);
+  clone.functions = cloneDeep(this.functions);
 
   clone.initLazyData();
 
@@ -387,28 +399,27 @@ ObjectGraph.prototype.capture = function(o, opts) {
 ObjectGraph.prototype.removeRefs_ = function(id, ids) {
   let found = false;
   if ( this.invData[id] ) {
-    _.forOwn(
-      this.invData[id],
-      (refIds, refKey) => refIds.forEach(
-        refId => {
-          found = true;
-          delete this.data[refId][refKey];
-        }
-      )
-    );
+    var refKeys = Object.keys(this.invData[id]);
+    refKeys.forEach(refKey => {
+      var refIds = refKeys[refKey];
+      refIds.forEach(refId => {
+        found = true;
+        delete this.data[refId][refKey];
+      });
+    });
   }
-  if ( this.invProtos[id] ) {
+  var invProtoIds = this.invProtos[id];
+  if ( invProtoIds ) {
     var newProto = id;
     while (!this.isType(newProto) &&
            ids.some(protoId => protoId === newProto))
       newProto = this.getPrototype(newProto);
 
-    _.forOwn(this.invProtos[id],
-             protoId => {
-               found = true;
-               console.assert(this.protos[protoId] === id);
-               this.protos[protoId] = newProto;
-             });
+    invProtoIds.forEach(invProtoId => {
+      found = true;
+      console.assert(this.protos[invProtoId] === id);
+      this.protos[invProtoId] = newProto;
+    });
   }
   return found;
 };
