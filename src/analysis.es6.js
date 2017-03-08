@@ -16,8 +16,6 @@
  */
 'use strict';
 
-let _ = require('lodash');
-
 function* objectGraphGenerator(graph) {
   for (let id of graph.getAllIds()) yield id;
 }
@@ -39,7 +37,7 @@ function* objectOwnGenerator(graph, id) {
 // }
 
 function anyAnyGraphMatcher(id1, g1, g2) {
-  return _.some(g1.getKeys(id1), key1 => g2.getAllKeysMap()[key1]);
+  return g1.getKeys(id1).some(key1 => g2.getAllKeysMap()[key1]);
 }
 
 function firstAnyGraphMatcher(id1, g1, g2) {
@@ -56,7 +54,15 @@ function intersectionIds1(g1, g2, match = anyAnyGraphMatcher) {
 }
 
 function differenceIds1(g1, g2, match = anyAnyGraphMatcher) {
-  return _.difference(g1.getAllIds(), intersectionIds1(g1, g2, match));
+  var diffArray = [];
+  var minuendArr = g1.getAllIds();
+  var subtrahendArr = intersectionIds1(g1, g2, match);
+  for (var i = 0; i < minuendArr.length; i ++) {
+    if (subtrahendArr.indexOf(minuendArr[i]) === -1) {
+      diffArray.push(minuendArr[i]);
+    }
+  }
+  return diffArray;
 }
 
 function lookupEq(id1, key, g1, g2) {
@@ -96,10 +102,8 @@ function intersectDifference(inGraphs, exGraphs, match = anyAnyGraphMatcher) {
   if (inGraphs.length === 1 && exGraphs.length === 0)
     return inGraphs[0].clone();
 
-  return _.reduce(
-    exGraphs, (g1, g2) => difference(g1, g2, match),
-    _.reduce(inGraphs, (g1, g2) => intersection(g1, g2, match))
-  );
+  return exGraphs.reduce((g1, g2) => difference(g1, g2, match),
+    inGraphs.reduce((g1, g2)=> intersection(g1, g2, match)));
 }
 
 module.exports = {
