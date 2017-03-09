@@ -98,10 +98,10 @@ ObjectGraph.prototype.blacklistedObjects = [
   value => value !== undefined
 );
 ObjectGraph.prototype.blacklistedProperties = [
+  // MimeType's enabledPlugin will return a new MimeType object
+  // in Chrome (version<=42), which will cause a infinite
+  // recursion in the object graphs.
   [ 'MimeType', 'enabledPlugin' ],
-    // MimeType's enabledPlugin will return a new MimeType object
-    // in Chrome (version<=42), which will cause a infinite
-    // recursion in the object graphs.
 ];
 
 
@@ -418,8 +418,8 @@ ObjectGraph.prototype.removeRefs_ = function(id, ids) {
   var invProtoIds = this.invProtos[id];
   if ( invProtoIds ) {
     var newProto = id;
-    while (!this.isType(newProto) &&
-           ids.some(protoId => protoId === newProto))
+    while ( !this.isType(newProto) &&
+           ids.some(protoId => protoId === newProto) )
       newProto = this.getPrototype(newProto);
 
     invProtoIds.forEach(invProtoId => {
@@ -448,13 +448,13 @@ ObjectGraph.prototype.removeIds = function(ids) {
 
   // Keep removing objects until no remaining objects are orphaned from root.
   do {
-    for (let id of ids) {
+    for ( let id of ids ) {
       this.removeRefs_(id, ids);
     }
-    for (let id of ids) {
+    for ( let id of ids ) {
       this.removeData_(id);
     }
-    for (let id of ids) {
+    for ( let id of ids ) {
       if ( id in this.functions ) {
         delete this.functions[id];
       }
@@ -465,7 +465,7 @@ ObjectGraph.prototype.removeIds = function(ids) {
     ids = this.getAllIds().filter(id => {
       return this.getShortestKey(id) === null;
     });
-  } while (ids.length > 0);
+  } while ( ids.length > 0 );
 
 
   return this;
@@ -473,7 +473,7 @@ ObjectGraph.prototype.removeIds = function(ids) {
 
 // Interface method: Remove id => key mappings.
 ObjectGraph.prototype.removePrimitives = function(idKeyPairs) {
-  for (let { id, key } of idKeyPairs) {
+  for ( let { id, key } of idKeyPairs ) {
     console.assert(this.data[id] && this.isType(this.data[id][key]),
                    `Attempt to remove non-primitive, ${id} . \
                    ${key}, with removePrimitives()`);
@@ -579,7 +579,7 @@ ObjectGraph.prototype.getAllKeys_ = function() {
   let seen = {};
   let strs = {};
 
-  for (let i = 0; i < q.length; i++) {
+  for ( let i = 0; i < q.length; i++ ) {
     let item = q[i];
     this.keysCache[item.id] = strs[item.id] = strs[item.id] || [];
     strs[item.id].push(item.key);

@@ -17,11 +17,11 @@
 'use strict';
 
 function* objectGraphGenerator(graph) {
-  for (let id of graph.getAllIds()) yield id;
+  for ( let id of graph.getAllIds() ) yield id;
 }
 
 function* objectOwnGenerator(graph, id) {
-  for (let key of graph.getObjectKeys(id))
+  for ( let key of graph.getObjectKeys(id) )
     yield { key: key, value: graph.lookup(key, id) };
 }
 
@@ -47,7 +47,7 @@ function firstAnyGraphMatcher(id1, g1, g2) {
 function intersectionIds1(g1, g2, match = anyAnyGraphMatcher) {
   let gen1 = objectGraphGenerator(g1);
   let ret = [];
-  for (let id1 of gen1) {
+  for ( let id1 of gen1 ) {
     if ( match(id1, g1, g2) ) ret.push(id1);
   }
   return ret;
@@ -57,7 +57,7 @@ function differenceIds1(g1, g2, match = anyAnyGraphMatcher) {
   var diffArray = [];
   var minuendArr = g1.getAllIds();
   var subtrahendArr = intersectionIds1(g1, g2, match);
-  for (var i = 0; i < minuendArr.length; i ++) {
+  for ( var i = 0; i < minuendArr.length; i ++ ) {
     if ( subtrahendArr.indexOf(minuendArr[i]) === -1 ) {
       diffArray.push(minuendArr[i]);
     }
@@ -77,8 +77,8 @@ function lookupNeq(id1, key, g1, g2) {
 
 function matchPrimitives(g1, g2, match = lookupEq) {
   let primitives = [];
-  for (let id1 of objectGraphGenerator(g1)) {
-    for (let { key, value } of objectOwnGenerator(g1, id1)) {
+  for ( let id1 of objectGraphGenerator(g1) ) {
+    for ( let { key, value } of objectOwnGenerator(g1, id1) ) {
       if ( g1.isType(value) && match(id1, key, g1, g2) ) {
         primitives.push({ id: id1, key });
       }

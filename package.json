@@ -23,9 +23,5 @@
     "facade-js": "git://github.com/mdittmer/facade-js.git",
     "id-js": "git://github.com/mdittmer/id-js.git",
     "ya-stdlib-js": "git://github.com/mdittmer/ya-stdlib-js.git"
-  },
-  "devDependencies": {
-    "eslint": "^3.17.1",
-    "eslint-config-google": "^0.7.1"
   }
 }
