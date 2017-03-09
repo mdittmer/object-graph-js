@@ -31,16 +31,16 @@ function ObjectGraph(opts) {
 };
 
 function cloneDeep(obj) {
-  if (typeof obj !== 'object') {
+  if ( typeof obj !== 'object' ) {
     return obj;
   }
-  let newObject = {}
+  var newObject = {};
   var properties = Object.keys(obj);
-  for (var i = 0; i < properties.length; i++) {
+  for ( var i = 0; i < properties.length; i++ ) {
     newObject[properties[i]] = cloneDeep(obj[properties[i]]);
   }
   return newObject;
-}
+};
 
 ObjectGraph.prototype.init = function(opts) {
   this.q = new TaskQueue(opts);
@@ -98,9 +98,10 @@ ObjectGraph.prototype.blacklistedObjects = [
   value => value !== undefined
 );
 ObjectGraph.prototype.blacklistedProperties = [
-  ['MimeType', 'enabledPlugin'],
-    // MimeType's enabledPlugin will return a new MimeType object in Chrome
-    // (version<=42), which will cause a infinite recursion in the object graphs.
+  [ 'MimeType', 'enabledPlugin' ],
+    // MimeType's enabledPlugin will return a new MimeType object
+    // in Chrome (version<=42), which will cause a infinite
+    // recursion in the object graphs.
 ];
 
 
@@ -131,20 +132,20 @@ ObjectGraph.prototype.initLazyData = function() {
 };
 
 ObjectGraph.prototype.storeObject = function(id) {
-  console.assert( ! this.data[id] , 'Repeated store-id');
+  console.assert( ! this.data[id], 'Repeated store-id');
   console.assert(typeof id === 'number', 'Illegal object id');
   this.data[id] = {};
   return this.data[id];
 };
 
 ObjectGraph.prototype.storeMetadata = function(id) {
-  console.assert( ! this.metadata[id] , 'Repeated store-metadata-id');
+  console.assert( ! this.metadata[id], 'Repeated store-metadata-id');
   this.metadata[id] = {};
   return this.metadata[id];
 };
 
 ObjectGraph.prototype.storeProto = function(oId, protoId) {
-  console.assert( ! this.protos[oId] , 'Repeated store-proto');
+  console.assert( ! this.protos[oId], 'Repeated store-proto');
   this.protos[oId] = protoId;
 };
 
@@ -198,7 +199,7 @@ ObjectGraph.prototype.rewriteName = function(name) {
 
 // Visit the prototype of o, given its dataMap.
 ObjectGraph.prototype.visitPrototype = function(o, dataMap) {
-  this.storeProto(uid.getId(o), this.visitObject(o.__proto__, {proto: true}));
+  this.storeProto(uid.getId(o), this.visitObject(o.__proto__, { proto: true }));
 };
 
 // getProtoPropertyNames returns all inherited properties
@@ -222,9 +223,10 @@ ObjectGraph.prototype.visitInstance = function(o, dataMap) {
     if ( this.isKeyBlacklisted(inheritedProps[i]) ||
         this.isPropertyBlacklisted(o, inheritedProps[i]) ) continue;
     // Enqueue work: Visit o's property.
-    this.q.enqueue(this.visitProperty.bind(this, o, inheritedProps[i], dataMap));
+    this.q.enqueue(this.visitProperty
+      .bind(this, o, inheritedProps[i], dataMap));
   }
-}
+};
 
 // Visit the property of o named propertyName, given o's dataMap.
 ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
@@ -253,8 +255,9 @@ ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
     if ( descriptor ) {
       metadataMap[name] = stdlib.mapMap(
           descriptor,
-          function(descriptorPart) { return descriptorPart ? 1 : 0; }
-          );
+          function(descriptorPart) {
+            return descriptorPart ? 1 : 0;
+          });
     } else {
       console.warn('Missing descriptor for name "' + name +
                    '" on object ' + uid.getId(o));
@@ -286,7 +289,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
       // have to use regular expression to find function name.
       this.functions[id] = o.toString().
         split(/[\s\(]/g).filter(
-          function(a) {return a !== ''}
+          a => a !== ''
         )[1];
     }
   }
@@ -314,7 +317,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   // is not sure until the entire object is visited.
   if ( proto !== true && ! o.hasOwnProperty('constructor') &&
     typeof o === 'object' ) {
-    this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap))
+    this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap));
   }
 
   return id;
@@ -403,7 +406,7 @@ ObjectGraph.prototype.removeRefs_ = function(id, ids) {
   let invData = this.invData[id];
   if ( invData ) {
     for ( var key in invData ) {
-      if (invData.hasOwnProperty(key)){
+      if ( invData.hasOwnProperty(key) ) {
         var refIds = invData[key];
         refIds.forEach(refId => {
           found = true;
@@ -470,9 +473,10 @@ ObjectGraph.prototype.removeIds = function(ids) {
 
 // Interface method: Remove id => key mappings.
 ObjectGraph.prototype.removePrimitives = function(idKeyPairs) {
-  for (let {id, key} of idKeyPairs) {
+  for (let { id, key } of idKeyPairs) {
     console.assert(this.data[id] && this.isType(this.data[id][key]),
-                   `Attempt to remove non-primitive, ${id} . ${key}, with removePrimitives()`);
+                   `Attempt to remove non-primitive, ${id} . \
+                   ${key}, with removePrimitives()`);
     delete this.data[id][key];
   }
 
@@ -515,7 +519,7 @@ ObjectGraph.prototype.getRoot = function() {
 };
 
 // Interface method: Get attribute and id belong to given id.
-ObjectGraph.prototype.getPropertiesIds = function(id){
+ObjectGraph.prototype.getPropertiesIds = function(id) {
   return Object.assign({}, this.data[id]);
 };
 
@@ -535,8 +539,6 @@ ObjectGraph.prototype.getAllIds_ = function() {
   }
   return ids.sort();
 };
-
-
 
 // Interface method: Get object's key names, optionally filtered by
 // opt_predicate.
@@ -573,7 +575,7 @@ ObjectGraph.prototype.getAllKeys = function() {
 // TODO: Doing this in reverse, exploiting cached prefixes would allow us to
 // be more incremental about this.
 ObjectGraph.prototype.getAllKeys_ = function() {
-  let q = [{id: this.root, key: this.key}];
+  let q = [ { id: this.root, key: this.key } ];
   let seen = {};
   let strs = {};
 
@@ -588,11 +590,11 @@ ObjectGraph.prototype.getAllKeys_ = function() {
     q.push.apply(
       q,
       keys.map(key => {
-        return {id: this.data[item.id][key], key: item.key + '.' + key};
-      }).concat([{
+        return { id: this.data[item.id][key], key: item.key + '.' + key };
+      }).concat([ {
         id: this.getPrototype(item.id),
         key: item.key + '.__proto__',
-      }]).sort((a, b) => a.key.length - b.key.length)
+      } ]).sort((a, b) => a.key.length - b.key.length)
     );
   }
 
@@ -654,7 +656,7 @@ ObjectGraph.prototype.lookup = function(key, opt_root) {
 ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
   var root = opt_id || this.root;
   return Object.assign({}, this.metadata[root][property]);
-}
+};
 
 // What to store when invoking toJSON.
 ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
@@ -674,7 +676,7 @@ ObjectGraph.prototype.toJSON = function() {
 // Load minimal data from serialization.
 ObjectGraph.fromJSON = function(o) {
   var ov = new ObjectGraph();
-  var keys =  ObjectGraph.jsonKeys;
+  var keys = ObjectGraph.jsonKeys;
   for ( var i = 0; i < ObjectGraph.jsonKeys.length; i++ ) {
     ov[keys[i]] = o[keys[i]];
   }

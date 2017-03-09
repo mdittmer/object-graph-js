@@ -22,7 +22,7 @@ function* objectGraphGenerator(graph) {
 
 function* objectOwnGenerator(graph, id) {
   for (let key of graph.getObjectKeys(id))
-    yield {key: key, value: graph.lookup(key, id)};
+    yield { key: key, value: graph.lookup(key, id) };
 }
 
 // function* objectGenerator(graph, id) {
@@ -48,7 +48,7 @@ function intersectionIds1(g1, g2, match = anyAnyGraphMatcher) {
   let gen1 = objectGraphGenerator(g1);
   let ret = [];
   for (let id1 of gen1) {
-    if (match(id1, g1, g2)) ret.push(id1);
+    if ( match(id1, g1, g2) ) ret.push(id1);
   }
   return ret;
 }
@@ -58,7 +58,7 @@ function differenceIds1(g1, g2, match = anyAnyGraphMatcher) {
   var minuendArr = g1.getAllIds();
   var subtrahendArr = intersectionIds1(g1, g2, match);
   for (var i = 0; i < minuendArr.length; i ++) {
-    if (subtrahendArr.indexOf(minuendArr[i]) === -1) {
+    if ( subtrahendArr.indexOf(minuendArr[i]) === -1 ) {
       diffArray.push(minuendArr[i]);
     }
   }
@@ -71,14 +71,16 @@ function lookupEq(id1, key, g1, g2) {
   return value1 === value2;
 }
 
-function lookupNeq(id1, key, g1, g2) { return !lookupEq(id1, key, g1, g2); }
+function lookupNeq(id1, key, g1, g2) {
+  return !lookupEq(id1, key, g1, g2);
+}
 
 function matchPrimitives(g1, g2, match = lookupEq) {
   let primitives = [];
   for (let id1 of objectGraphGenerator(g1)) {
-    for (let {key, value} of objectOwnGenerator(g1, id1)) {
-      if (g1.isType(value) && match(id1, key, g1, g2)) {
-        primitives.push({id: id1, key});
+    for (let { key, value } of objectOwnGenerator(g1, id1)) {
+      if ( g1.isType(value) && match(id1, key, g1, g2) ) {
+        primitives.push({ id: id1, key });
       }
     }
   }
@@ -99,7 +101,7 @@ function intersectDifference(inGraphs, exGraphs, match = anyAnyGraphMatcher) {
   // Must start with some graph.
   console.assert(inGraphs.length > 0);
   // Edge case: Clone lone graph when no other graphs passed in.
-  if (inGraphs.length === 1 && exGraphs.length === 0)
+  if ( inGraphs.length === 1 && exGraphs.length === 0 )
     return inGraphs[0].clone();
 
   return exGraphs.reduce((g1, g2) => difference(g1, g2, match),

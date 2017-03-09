@@ -1,0 +1,20 @@
+{
+  "env": {
+    "browser": true,
+    "node": true,
+    "es6": true
+  },
+  "extends": "google",
+  "rules": {
+    "no-var": "off",
+    "require-jsdoc": "off",
+    "arrow-parens": ["error", "as-needed"],
+    "prefer-rest-params": "off",
+    "camelcase": "off",
+    "prefer-spread": "off",
+    "one-var": "off",
+    "array-bracket-spacing": ["error", "always"],
+    "object-curly-spacing": ["error", "always"],
+    "no-multi-spaces": "off"
+  }
+}
