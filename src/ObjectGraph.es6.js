@@ -107,9 +107,11 @@ ObjectGraph.prototype.blacklistedProperties = [
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
     var invTypes = {};
-    Object.keys(this.types).map(type => {
-      invTypes[this.types[type]] = type;
-    })
+    for ( var type in this.types) {
+      if ( this.types.hasOwnProperty(type) ) {
+        invTypes[this.types[type]] = type;
+      }
+    }
     return invTypes;
   });
   stdlib.memo(this, 'invData',
@@ -398,15 +400,17 @@ ObjectGraph.prototype.capture = function(o, opts) {
 
 ObjectGraph.prototype.removeRefs_ = function(id, ids) {
   let found = false;
-  if ( this.invData[id] ) {
-    var refKeys = Object.keys(this.invData[id]);
-    refKeys.forEach(refKey => {
-      var refIds = refKeys[refKey];
-      refIds.forEach(refId => {
-        found = true;
-        delete this.data[refId][refKey];
-      });
-    });
+  let invData = this.invData[id];
+  if ( invData ) {
+    for ( var key in invData ) {
+      if (invData.hasOwnProperty(key)){
+        var refIds = invData[key];
+        refIds.forEach(refId => {
+          found = true;
+          delete this.data[refId][key];
+        });
+      }
+    }
   }
   var invProtoIds = this.invProtos[id];
   if ( invProtoIds ) {
