@@ -20,7 +20,7 @@ var NameRewriter = function(opts) {
   opts = opts || {};
   this.rewrites = opts.rewrites ||
       Object.getOwnPropertyNames(Object.prototype).map(function(name) {
-        return [name, '+' + name + '+'];
+        return [ name, '+' + name + '+' ];
       });
   this.browsers = opts.browsers || this.browsers.slice();
   this.platforms = opts.platforms || this.platforms.slice();
