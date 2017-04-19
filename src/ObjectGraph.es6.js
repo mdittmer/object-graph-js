@@ -637,7 +637,8 @@ ObjectGraph.prototype.lookup_ = function(path, root) {
         id = this.getPrototype(id);
     }
     if ( this.isType(id) ) return null;
-    if ( typeof nextId !== 'number' ) debugger;
+    // TODO(markdittmer,): What regression was this introduced to catch?
+    // if ( typeof nextId !== 'number' ) debugger;
     id = nextId;
   }
   return id || null;
