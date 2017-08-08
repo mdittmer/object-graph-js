@@ -287,10 +287,10 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
     } else {
       // In IE, function does not have name property,
       // have to use regular expression to find function name.
-      this.functions[id] = o.toString().
-        split(/[\s\(]/g).filter(
-          a => a !== ''
-        )[1];
+      var match = o.toString().
+          match(/^function\s+([A-Za-z_$][0-9A-Za-z_$]*)\s*\(/);
+      if ( ! match ) console.warn('Saving unnamed function');
+      this.functions[id] = match ? match[1] : '';
     }
   }
 
