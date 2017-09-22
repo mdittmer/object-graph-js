@@ -50,7 +50,7 @@ NameRewriter.prototype.browsers = [
   },
   {
     name: 'Safari',
-    re: /(Safari)\/([0-9_.]+)/,
+    re: /(Version)\/([0-9_.]+).*(Safari)\/([0-9_.]+)/,
   },
   {
     name: 'IE',
