@@ -165,6 +165,11 @@ ObjectGraph.prototype.maybeSkip = function(o) {
 
 // Return true if and only if o[key] is a blacklisted object.
 ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
+  for ( var i = 0; i < this.blacklistedProperties.length; i++ ) {
+    if ( o.constructor && key === this.blacklistedProperties[i][1] &&
+      o.constructor.name === this.blacklistedProperties[i][0] )
+        return true;
+  }
   var value;
   try {
     value = o[key];
@@ -173,11 +178,6 @@ ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
   }
   for ( var i = 0; i < this.blacklistedObjects.length; i++ ) {
     if ( value === this.blacklistedObjects[i] ) return true;
-  }
-  for ( var i = 0; i < this.blacklistedProperties.length; i++ ) {
-    if ( o.constructor && key === this.blacklistedProperties[i][1] &&
-      o.constructor.name === this.blacklistedProperties[i][0] )
-        return true;
   }
   return false;
 };
