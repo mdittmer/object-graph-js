@@ -210,7 +210,7 @@ ObjectGraph.prototype.getProtoPropertyNames = function(id) {
   var protoId = this.getPrototype(id);
   if ( ! protoId || this.isType(protoId) ) return emptyArray;
   var exceptionProps = this.getObjectKeys(id, (prop, key) =>
-    prop === this.types.exception
+    prop === this.types.exception || prop === this.types.undefined
   );
   return exceptionProps.concat(this.getProtoPropertyNames(protoId));
 };
