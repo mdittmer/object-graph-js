@@ -347,8 +347,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   // and it does not have constructor property.
   // TODO: This strategy isn't sound, whether a object is a prototype or not
   // is not sure until the entire object is visited.
-  if ( proto !== true && ! o.hasOwnProperty('constructor') &&
-    typeof o === 'object' ) {
+  if ( proto !== true && typeof o === 'object' ) {
     this.instanceQueue.enqueue(this.visitInstance.bind(this, o, dataMap));
   }
 
