@@ -104,6 +104,13 @@ ObjectGraph.prototype.blacklistedProperties = [
   [ 'MimeType', 'enabledPlugin' ],
 ];
 
+ObjectGraph.FUNCTION_NAME_REG_EXP =
+    /^function\s+([A-Za-z_$][0-9A-Za-z_$]*)\s*\(/;
+ObjectGraph.FUNCTION_NAME_REG_EXP_MATCH_NAME_IDX = 1;
+ObjectGraph.OBJECT_CTOR_REG_EXP =
+    /^\[object ([A-Za-z_$][0-9A-Za-z_$]*)\]$/;
+ObjectGraph.OBJECT_CTOR_NAME_MATCH_IDX = 1;
+ObjectGraph.CTOR_SUFFIX = 'Constructor';
 
 ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'invTypes', () => {
@@ -149,6 +156,34 @@ ObjectGraph.prototype.storeProto = function(oId, protoId) {
   this.protos[oId] = protoId;
 };
 
+ObjectGraph.prototype.getNameFromConstructor = function(o) {
+  if ( o.name ) {
+    return o.name;
+  }
+
+  if ( ! o.toString ) {
+    return '';
+  }
+
+  var toString = o.toString();
+  var fNameMatch = toString.match(ObjectGraph.FUNCTION_NAME_REG_EXP);
+  if ( fNameMatch !== null ) {
+    return fNameMatch[ObjectGraph.FUNCTION_NAME_REG_EXP_MATCH_NAME_IDX];
+  }
+
+  var oNameMatch = toString.match(ObjectGraph.OBJECT_CTOR_REG_EXP);
+  if ( oNameMatch !== null ) {
+    var fullName = oNameMatch[ObjectGraph.OBJECT_CTOR_NAME_MATCH_IDX];
+    var suffixDiff = fullName.length - ObjectGraph.CTOR_SUFFIX.length;
+    if ( fullName.indexOf(ObjectGraph.CTOR_SUFFIX) === suffixDiff ) {
+      fullName = fullName.substr(0, suffixDiff);
+    }
+    return fullName;
+  }
+
+  return '';
+};
+
 // Return an id associated with o if and only if object[key] traversal of o
 // should be skipped. Otherwise, return null.
 //
@@ -163,12 +198,16 @@ ObjectGraph.prototype.maybeSkip = function(o) {
   return null;
 };
 
-// Return true if and only if o[key] is a blacklisted object.
+// Return true if and only if:
+// (1) key + o's type (by constructor name) is blacklisted, OR
+// (2) o[key] is a blacklisted object.
 ObjectGraph.prototype.isPropertyBlacklisted = function(o, key) {
   for ( var i = 0; i < this.blacklistedProperties.length; i++ ) {
     if ( o.constructor && key === this.blacklistedProperties[i][1] &&
-      o.constructor.name === this.blacklistedProperties[i][0] )
-        return true;
+         this.getNameFromConstructor(o.constructor) ===
+         this.blacklistedProperties[i][0] ) {
+      return true;
+    }
   }
   var value;
   try {
@@ -221,7 +260,7 @@ ObjectGraph.prototype.visitInstance = function(o, dataMap) {
   var inheritedProps = this.getProtoPropertyNames(uid.getId(o));
   for ( var i = 0; i < inheritedProps.length; i++ ) {
     if ( this.isKeyBlacklisted(inheritedProps[i]) ||
-        this.isPropertyBlacklisted(o, inheritedProps[i]) ) continue;
+         this.isPropertyBlacklisted(o, inheritedProps[i]) ) continue;
     // Enqueue work: Visit o's property.
     this.q.enqueue(this.visitProperty
       .bind(this, o, inheritedProps[i], dataMap));
@@ -282,16 +321,9 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   // Store function-type info in a special place. We visit them like any
   // other object with identity, so their id will not indicate their type.
   if ( typeof o === 'function' || o instanceof Function ) {
-    if ( o.name ) {
-      this.functions[id] = o.name;
-    } else {
-      // In IE, function does not have name property,
-      // have to use regular expression to find function name.
-      var match = o.toString().
-          match(/^function\s+([A-Za-z_$][0-9A-Za-z_$]*)\s*\(/);
-      if ( ! match ) console.warn('Saving unnamed function');
-      this.functions[id] = match ? match[1] : '';
-    }
+    var fName = this.getNameFromConstructor(o);
+    if ( fName === '' ) console.warn('Saving unnamed function');
+    this.functions[id] = fName;
   }
 
   var dataMap = this.storeObject(id);
