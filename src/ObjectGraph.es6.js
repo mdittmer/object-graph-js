@@ -182,7 +182,7 @@ ObjectGraph.prototype.getNameFromConstructor = function(o) {
   if ( oNameMatch !== null ) {
     var fullName = oNameMatch[ObjectGraph.OBJECT_CTOR_NAME_MATCH_IDX];
     var suffixDiff = fullName.length - ObjectGraph.CTOR_SUFFIX.length;
-    if ( fullName.indexOf(ObjectGraph.CTOR_SUFFIX) === suffixDiff ) {
+    if ( fullName.endsWith(ObjectGraph.CTOR_SUFFIX) ) {
       fullName = fullName.substr(0, suffixDiff);
     }
     return fullName;
