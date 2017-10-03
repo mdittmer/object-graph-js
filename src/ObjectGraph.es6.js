@@ -151,6 +151,13 @@ ObjectGraph.prototype.storeMetadata = function(id) {
   return this.metadata[id];
 };
 
+ObjectGraph.prototype.storeToString = function(oId, o) {
+  console.assert( ! this.toStrings[oId], 'Repeated store-toString');
+  try {
+    this.toStrings[oId] = o.toString();
+  } catch (e) {}
+};
+
 ObjectGraph.prototype.storeProto = function(oId, protoId) {
   console.assert( ! this.protos[oId], 'Repeated store-proto');
   this.protos[oId] = protoId;
@@ -330,6 +337,8 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
   var dataMap = this.storeObject(id);
   var metadataMap = this.storeMetadata(id);
 
+  if ( ! this.isType(id) ) this.storeToString(id, o);
+
   // Enqueue work: Visit o's prototype and property descriptors.
   this.q.enqueue(this.visitPrototype.bind(this, o, dataMap));
   this.q.enqueue(this.visitPropertyDescriptors.bind(this, o,
@@ -369,6 +378,7 @@ ObjectGraph.prototype.cloneWithout = function(withoutIds) {
   clone.data = cloneDeep(this.data);
   clone.metadata = cloneDeep(this.metadata);
   clone.protos = cloneDeep(this.protos);
+  clone.toStrings = cloneDeep(this.toStrings);
   clone.functions = cloneDeep(this.functions);
 
   clone.initLazyData();
@@ -399,6 +409,7 @@ ObjectGraph.prototype.capture = function(o, opts) {
   this.data = {};
   this.metadata = {};
   this.protos = {};
+  this.toStrings = {};
   this.functions = {};
   this.keysCache = {};
 
@@ -540,6 +551,11 @@ ObjectGraph.prototype.getFunctions = function() {
   return Object.keys(this.functions);
 };
 
+// Interface method: Get the string representation of an object by id.
+ObjectGraph.prototype.getToString = function(id) {
+  return this.toStrings[id];
+};
+
 // Interface method: Get the name of given function id.
 ObjectGraph.prototype.getFunctionName = function(id) {
   return this.functions[id];
@@ -656,6 +672,17 @@ ObjectGraph.prototype.getPrototype = function(id) {
   return this.protos[id] || this.types['null'];
 };
 
+// Interface method: Get objects that have id as their prototype.
+ObjectGraph.prototype.getSupers = function(id) {
+  var supers = this.invProtos[id];
+  if (!supers) return [];
+  return supers.map(function(strId) {
+    var id = parseInt(strId);
+    console.assert(!isNaN(id), 'Non-numeric id store in invProto');
+    return id;
+  });
+};
+
 // Helper to .lookup() interface method; operates over path array starting
 // from root.
 ObjectGraph.prototype.lookup_ = function(path, root) {
@@ -692,9 +719,20 @@ ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
 };
 
 // What to store when invoking toJSON.
-ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
-                         'protos', 'types', 'keys', 'blacklistedKeys',
-                         'metadata', 'functions' ].sort();
+ObjectGraph.jsonKeys = [
+  'blacklistedKeys',
+  'data',
+  'functions',
+  'key',
+  'keys',
+  'metadata',
+  'protos',
+  'root',
+  'timestamp',
+  'toStrings',
+  'types',
+  'userAgent'
+].sort();
 
 // Store minimal data for serialization.
 ObjectGraph.prototype.toJSON = function() {
@@ -720,17 +758,38 @@ ObjectGraph.fromJSON = function(o) {
 module.exports = facade(ObjectGraph, {
   properties: [ 'userAgent' ],
   methods: {
-    clone: 1, cloneWithout: 1, capture: 1, removeIds: 1, removePrimitives: 1,
-    isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
-    getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
-    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, lookup: 1, getFunctionName: 1,
-    getRoot: 1, getPropertiesIds: 1, lookupMetaData: 1,
+    capture: 1,
+    clone: 1,
+    cloneWithout: 1,
+    getAllIds: 1,
+    getAllKeys: 1,
+    getAllKeysMap: 1,
+    getFunctionName: 1,
+    getFunctions: 1,
+    getKeys: 1,
+    getObjectKeys: 1,
+    getPropertiesIds: 1,
+    getPrototype: 1,
+    getRoot: 1,
+    getShortestKey: 1,
+    getSupers: 1,
+    getToString: 1,
+    getType: 1,
+    isFunction: 1,
+    isType: 1,
+    lookup: 1,
+    lookupMetaData: 1,
+    removeIds: 1,
+    removePrimitives: 1,
+    toJSON: 1,
+
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
   },
   classFns: {
     fromJSON: 'factory',
+
     blacklistObject: function(o) {
       this.prototype.blacklistedObjects.push(o);
     },
