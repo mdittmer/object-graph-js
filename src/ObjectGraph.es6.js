@@ -553,7 +553,7 @@ ObjectGraph.prototype.getFunctions = function() {
 
 // Interface method: Get the string representation of an object by id.
 ObjectGraph.prototype.getToString = function(id) {
-  return this.toStrings[id];
+  return this.toStrings && this.toStrings[id];
 };
 
 // Interface method: Get the name of given function id.
