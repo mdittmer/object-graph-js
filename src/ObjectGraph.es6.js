@@ -295,7 +295,8 @@ ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
       metadataMap[name] = stdlib.mapMap(
           descriptor,
           function(descriptorPart) {
-            return descriptorPart ? 1 : 0;
+            return descriptorPart === undefined || descriptorPart === false ?
+                0 : 1;
           });
     } else {
       console.warn('Missing descriptor for name "' + name +
