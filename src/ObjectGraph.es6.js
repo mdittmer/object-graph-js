@@ -718,9 +718,20 @@ ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
 };
 
 // What to store when invoking toJSON.
-ObjectGraph.jsonKeys = [ 'timestamp', 'userAgent', 'root', 'key', 'data',
-                         'protos', 'types', 'keys', 'blacklistedKeys',
-                         'metadata', 'toStrings', 'functions' ].sort();
+ObjectGraph.jsonKeys = [
+  'blacklistedKeys',
+  'data',
+  'functions',
+  'key',
+  'keys',
+  'metadata',
+  'protos',
+  'root',
+  'timestamp',
+  'toStrings',
+  'types',
+  'userAgent'
+].sort();
 
 // Store minimal data for serialization.
 ObjectGraph.prototype.toJSON = function() {
@@ -746,18 +757,38 @@ ObjectGraph.fromJSON = function(o) {
 module.exports = facade(ObjectGraph, {
   properties: [ 'userAgent' ],
   methods: {
-    clone: 1, cloneWithout: 1, capture: 1, removeIds: 1, removePrimitives: 1,
-    isType: 1, getType: 1, isFunction: 1, getFunctions: 1, getAllIds: 1,
-    getObjectKeys: 1, getKeys: 1, getShortestKey: 1, getAllKeys: 1,
-    getAllKeysMap: 1, toJSON: 1, getPrototype: 1, getSupers: 1, lookup: 1,
-    getToString: 1, getFunctionName: 1, getRoot: 1, getPropertiesIds: 1,
+    capture: 1,
+    clone: 1,
+    cloneWithout: 1,
+    getAllIds: 1,
+    getAllKeys: 1,
+    getAllKeysMap: 1,
+    getFunctionName: 1,
+    getFunctions: 1,
+    getKeys: 1,
+    getObjectKeys: 1,
+    getPropertiesIds: 1,
+    getPrototype: 1,
+    getRoot: 1,
+    getShortestKey: 1,
+    getSupers: 1,
+    getToString: 1,
+    getType: 1,
+    isFunction: 1,
+    isType: 1,
+    lookup: 1,
     lookupMetaData: 1,
+    removeIds: 1,
+    removePrimitives: 1,
+    toJSON: 1,
+
     blacklistObject: function(o) {
       this.blacklistedObjects.push(o);
     },
   },
   classFns: {
     fromJSON: 'factory',
+
     blacklistObject: function(o) {
       this.prototype.blacklistedObjects.push(o);
     },
