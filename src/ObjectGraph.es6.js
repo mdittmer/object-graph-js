@@ -739,7 +739,8 @@ ObjectGraph.prototype.toJSON = function() {
   var o = {};
   var keys = ObjectGraph.jsonKeys;
   for ( var i = 0; i < ObjectGraph.jsonKeys.length; i++ ) {
-    o[keys[i]] = this[keys[i]];
+    if (this.hasOwnProperty(keys[i]))
+      o[keys[i]] = this[keys[i]];
   }
   return o;
 };
@@ -749,7 +750,8 @@ ObjectGraph.fromJSON = function(o) {
   var ov = new ObjectGraph();
   var keys = ObjectGraph.jsonKeys;
   for ( var i = 0; i < ObjectGraph.jsonKeys.length; i++ ) {
-    ov[keys[i]] = o[keys[i]];
+    if (o.hasOwnProperty(keys[i]))
+      ov[keys[i]] = o[keys[i]];
   }
   ov.initLazyData();
   return ov;
