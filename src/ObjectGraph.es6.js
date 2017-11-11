@@ -403,6 +403,9 @@ ObjectGraph.prototype.capture = function(o, opts) {
   }
   this.busy = true;
 
+  // Lock-in user agent by (potentially) copying it into an own property.
+  this.userAgent = this.userAgent;
+
   this.timestamp = null;
   this.key = opts.key || '';
   this.root = typeof o === 'object' && o !== null ? o['+UID'] : o;
