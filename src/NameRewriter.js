@@ -60,6 +60,14 @@ NameRewriter.prototype.browsers = [
     name: 'IE',
     re: /(Trident).*rv:([0-9_.]+)/,
   },
+  {
+    name: 'QQ',
+    re: /(M?QQBrowser)\/([0-9_.]+)/,
+  },
+  {
+    name: 'UC',
+    re: /(UC?Browser)\/([0-9_.]+)/,
+  },
 ];
 
 NameRewriter.prototype.platforms = [
