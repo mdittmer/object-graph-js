@@ -55,7 +55,7 @@ NameRewriter.prototype.browsers = [
   },
   {
     name: 'Samsung',
-    re: /(SamsungBrowser/)\/([0-9_.]+)/,
+    re: /(SamsungBrowser)\/([0-9_.]+)/,
   },
   {
     name: 'Firefox',
