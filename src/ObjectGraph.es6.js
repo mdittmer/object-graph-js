@@ -128,12 +128,15 @@ ObjectGraph.prototype.initLazyData = function() {
               remap['a:b:c=>b:[(a,c)]'].bind(this, this.data));
   stdlib.memo(this, 'invProtos',
               remap['a:b=>b:[a]'].bind(this, this.protos));
-  stdlib.memo(this, 'environment', function() {
-    return this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
-  }.bind(this));
   stdlib.memo(this, 'allIds_', this.getAllIds_.bind(this));
   stdlib.memo(this, 'allKeys_', this.getAllKeys_.bind(this));
   stdlib.memo(this, 'allKeysMap_', this.getAllKeysMap_.bind(this));
+
+
+  // Initialize environment to match user agent, but may be modified and
+  // serialized as being different. (Not all browsers have precise versioning
+  // encodd in UA string).
+  this.environment = this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
 
   this.keysCache = {};
 };
@@ -402,6 +405,9 @@ ObjectGraph.prototype.capture = function(o, opts) {
     return this;
   }
   this.busy = true;
+
+  // Lock-in user agent by (potentially) copying it into an own property.
+  this.userAgent = this.userAgent;
 
   this.timestamp = null;
   this.key = opts.key || '';
