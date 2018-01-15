@@ -30,6 +30,10 @@ var NameRewriter = function(opts) {
 // so the order is important. (Chromium-based browsers before Chrome, etc.)
 NameRewriter.prototype.browsers = [
   {
+    name: 'CocCoc',
+    re: /(coc_coc_browser)\/([0-9_.]+)/,
+  },
+  {
     name: 'Edge',
     re: /(Edge)\/([0-9_.]+)/,
   },
@@ -48,6 +52,10 @@ NameRewriter.prototype.browsers = [
   {
     name: 'Opera',
     re: /(OPR)\/([0-9_.]+)/,
+  },
+  {
+    name: 'Samsung',
+    re: /(SamsungBrowser)\/([0-9_.]+)/,
   },
   {
     name: 'Firefox',
