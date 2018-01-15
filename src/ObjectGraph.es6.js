@@ -54,6 +54,14 @@ ObjectGraph.prototype.init = function(opts) {
 
   // Try to prevent recursion into internal structures.
   this.blacklistedObjects.push(this);
+
+  // Lock-in user agent by (potentially) copying it into an own property.
+  this.userAgent = this.userAgent;
+
+  // Initialize environment to match user agent, but may be modified and
+  // serialized as being different. (Not all browsers have precise versioning
+  // encoded in UA string).
+  this.environment = this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
 };
 
 ObjectGraph.prototype.userAgent = typeof navigator !== 'undefined' ?
@@ -132,11 +140,6 @@ ObjectGraph.prototype.initLazyData = function() {
   stdlib.memo(this, 'allKeys_', this.getAllKeys_.bind(this));
   stdlib.memo(this, 'allKeysMap_', this.getAllKeysMap_.bind(this));
 
-
-  // Initialize environment to match user agent, but may be modified and
-  // serialized as being different. (Not all browsers have precise versioning
-  // encodd in UA string).
-  this.environment = this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
 
   this.keysCache = {};
 };
@@ -405,9 +408,6 @@ ObjectGraph.prototype.capture = function(o, opts) {
     return this;
   }
   this.busy = true;
-
-  // Lock-in user agent by (potentially) copying it into an own property.
-  this.userAgent = this.userAgent;
 
   this.timestamp = null;
   this.key = opts.key || '';
@@ -728,6 +728,7 @@ ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
 ObjectGraph.jsonKeys = [
   'blacklistedKeys',
   'data',
+  'environment',
   'functions',
   'key',
   'keys',
@@ -764,7 +765,7 @@ ObjectGraph.fromJSON = function(o) {
 };
 
 module.exports = facade(ObjectGraph, {
-  properties: [ 'userAgent' ],
+  properties: [ 'userAgent', 'environment' ],
   methods: {
     capture: 1,
     clone: 1,
