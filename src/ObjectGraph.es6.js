@@ -55,18 +55,11 @@ ObjectGraph.prototype.init = function(opts) {
   // Try to prevent recursion into internal structures.
   this.blacklistedObjects.push(this);
 
-  // Lock-in user agent by (potentially) copying it into an own property.
-  this.userAgent = this.userAgent;
-
-  // Initialize environment to match user agent, but may be modified and
-  // serialized as being different. (Not all browsers have precise versioning
-  // encoded in UA string).
-  this.environment = this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
+  // No default userAgent or environment.
+  this.userAgent = null;
+  this.environment = null;
 };
 
-ObjectGraph.prototype.userAgent = typeof navigator !== 'undefined' ?
-  navigator.userAgent :
-  typeof process !== 'undefined' ? 'NodeJS/' + process.version : 'Unknown';
 // Map of primitive types (leaves in object graph).
 // NOTE: It must be impossible for +UIDs of visited objects to take on these
 // values.
