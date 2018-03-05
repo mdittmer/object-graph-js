@@ -761,7 +761,7 @@ ObjectGraph.fromJSON = function(o) {
 };
 
 module.exports = facade(ObjectGraph, {
-  properties: [ 'userAgent' ],
+  properties: [ 'userAgent', 'environment' ],
   methods: {
     capture: 1,
     clone: 1,
