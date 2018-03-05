@@ -725,6 +725,7 @@ ObjectGraph.prototype.lookupMetaData = function(property, opt_id) {
 ObjectGraph.jsonKeys = [
   'blacklistedKeys',
   'data',
+  'environment',
   'functions',
   'key',
   'keys',
