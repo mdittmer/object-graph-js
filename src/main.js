@@ -20,5 +20,6 @@ module.exports = {
   NameRewriter: require('./NameRewriter.js'),
   TaskQueue: require('./TaskQueue.js'),
   ObjectGraph: require('./ObjectGraph.es6.js'),
+  BrowserObjectGraph: require('./BrowserObjectGraph.es6.js'),
   analysis: require('./analysis.es6.js'),
 };
