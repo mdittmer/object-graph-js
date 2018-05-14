@@ -21,8 +21,7 @@ const ObjectGraph = require('./ObjectGraph.es6.js');
 // BrowserObjectGraph is an ObjectGraph with custom application logic to probe
 // for interface members that may go undetected using object reflection.
 function BrowserObjectGraph(opts) {
-  opts = opts || {};
-  this.init(opts);
+  this.init(opts || {});
 };
 
 BrowserObjectGraph.prototype = Object.create(ObjectGraph.prototype);
