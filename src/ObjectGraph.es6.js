@@ -19,7 +19,6 @@
 var uid = require('id-js')();
 var stdlib = require('ya-stdlib-js');
 var remap = stdlib.remap;
-var facade = require('facade-js');
 var NameRewriter = require('./NameRewriter.js');
 var TaskQueue = require('./TaskQueue.js');
 var emptyArray = [];
@@ -191,6 +190,14 @@ ObjectGraph.prototype.getNameFromConstructor = function(o) {
   return '';
 };
 
+ObjectGraph.prototype.blacklistObject = function(o) {
+  this.blacklistedObjects.push(o);
+};
+
+ObjectGraph.blacklistObject = function(o) {
+  this.prototype.blacklistedObjects.push(o);
+};
+
 // Return an id associated with o if and only if object[key] traversal of o
 // should be skipped. Otherwise, return null.
 //
@@ -285,8 +292,12 @@ ObjectGraph.prototype.visitProperty = function(o, propertyName, dataMap) {
   }
 };
 
+ObjectGraph.prototype.getOwnPropertyNames = function(o) {
+  return Object.getOwnPropertyNames(o);
+};
+
 ObjectGraph.prototype.visitPropertyDescriptors = function(o, metadataMap) {
-  var names = Object.getOwnPropertyNames(o);
+  var names = this.getOwnPropertyNames(o);
   // Visit all of o's property descriptors (skipping blacklisted
   // properties).
   for ( var i = 0; i < names.length; i++ ) {
@@ -345,7 +356,7 @@ ObjectGraph.prototype.visitObject = function(o, opt) {
                                                     metadataMap));
 
   // Visit all of o's properties (skipping blacklisted ones).
-  var names = Object.getOwnPropertyNames(o);
+  var names = this.getOwnPropertyNames(o);
   for ( var i = 0; i < names.length; i++ ) {
     if ( this.isKeyBlacklisted(names[i]) ||
         this.isPropertyBlacklisted(o, names[i]) ) continue;
@@ -581,7 +592,7 @@ ObjectGraph.prototype.getAllIds = function() {
 
 ObjectGraph.prototype.getAllIds_ = function() {
   var ids = [];
-  var strIds = Object.getOwnPropertyNames(this.data);
+  var strIds = this.getOwnPropertyNames(this.data);
   for ( var i = 0; i < strIds.length; i++ ) {
     if ( this.isKeyBlacklisted(strIds[i]) ) continue;
     var id = parseInt(strIds[i]);
@@ -596,7 +607,7 @@ ObjectGraph.prototype.getAllIds_ = function() {
 ObjectGraph.prototype.getObjectKeys = function(id, opt_predicate) {
   if ( ! this.data[id] ) return [];
   var data = this.data[id];
-  var keys = Object.getOwnPropertyNames(data);
+  var keys = this.getOwnPropertyNames(data);
   if ( ! opt_predicate ) return keys.sort();
   return keys.filter(function(key) {
     return opt_predicate(data[key], key);
@@ -637,7 +648,7 @@ ObjectGraph.prototype.getAllKeys_ = function() {
     if ( seen[item.id] ) continue;
     seen[item.id] = true;
     if ( this.isType(item.id) ) continue;
-    let keys = Object.getOwnPropertyNames(this.data[item.id]);
+    let keys = this.getOwnPropertyNames(this.data[item.id]);
     q.push.apply(
       q,
       keys.map(key => {
@@ -660,7 +671,7 @@ ObjectGraph.prototype.getAllKeysMap = function() {
 ObjectGraph.prototype.getAllKeysMap_ = function() {
   var allKeys = this.getAllKeys();
   var map = {};
-  var ids = Object.getOwnPropertyNames(allKeys);
+  var ids = this.getOwnPropertyNames(allKeys);
   for ( var i = 0; i < ids.length; i++ ) {
     var keys = allKeys[ids[i]];
     for ( var j = 0; j < keys.length; j++ ) {
@@ -761,43 +772,4 @@ ObjectGraph.fromJSON = function(o) {
   return ov;
 };
 
-module.exports = facade(ObjectGraph, {
-  properties: [ 'userAgent', 'environment' ],
-  methods: {
-    capture: 1,
-    clone: 1,
-    cloneWithout: 1,
-    getAllIds: 1,
-    getAllKeys: 1,
-    getAllKeysMap: 1,
-    getFunctionName: 1,
-    getFunctions: 1,
-    getKeys: 1,
-    getObjectKeys: 1,
-    getPropertiesIds: 1,
-    getPrototype: 1,
-    getRoot: 1,
-    getShortestKey: 1,
-    getSupers: 1,
-    getToString: 1,
-    getType: 1,
-    isFunction: 1,
-    isType: 1,
-    lookup: 1,
-    lookupMetaData: 1,
-    removeIds: 1,
-    removePrimitives: 1,
-    toJSON: 1,
-
-    blacklistObject: function(o) {
-      this.blacklistedObjects.push(o);
-    },
-  },
-  classFns: {
-    fromJSON: 'factory',
-
-    blacklistObject: function(o) {
-      this.prototype.blacklistedObjects.push(o);
-    },
-  },
-});
+module.exports = ObjectGraph;
