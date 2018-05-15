@@ -24,6 +24,15 @@ function BrowserObjectGraph(opts) {
   this.init(opts || {});
 };
 
+// Copy class-level properties from ObjectGraph.
+const ogClassProperties = Object.getOwnPropertyNames(ObjectGraph);
+const bogClassProperties = Object.getOwnPropertyNames(BrowserObjectGraph);
+const extraClassProperties = ogClassProperties
+    .filter(name => !bogClassProperties.includes(name));
+for (const key of extraClassProperties) {
+  BrowserObjectGraph[key] = ObjectGraph[key];
+} 
+
 BrowserObjectGraph.prototype = Object.create(ObjectGraph.prototype);
 
 BrowserObjectGraph.prototype.isCSSStyleDecl_ =
