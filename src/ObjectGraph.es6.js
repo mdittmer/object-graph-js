@@ -53,11 +53,12 @@ ObjectGraph.prototype.init = function(opts) {
 
   // Try to prevent recursion into internal structures.
   this.blacklistedObjects.push(this);
+
+  // No default userAgent or environment.
+  this.userAgent = null;
+  this.environment = null;
 };
 
-ObjectGraph.prototype.userAgent = typeof navigator !== 'undefined' ?
-  navigator.userAgent :
-  typeof process !== 'undefined' ? 'NodeJS/' + process.version : 'Unknown';
 // Map of primitive types (leaves in object graph).
 // NOTE: It must be impossible for +UIDs of visited objects to take on these
 // values.
@@ -127,12 +128,10 @@ ObjectGraph.prototype.initLazyData = function() {
               remap['a:b:c=>b:[(a,c)]'].bind(this, this.data));
   stdlib.memo(this, 'invProtos',
               remap['a:b=>b:[a]'].bind(this, this.protos));
-  stdlib.memo(this, 'environment', function() {
-    return this.nameRewriter.userAgentAsPlatformInfo(this.userAgent);
-  }.bind(this));
   stdlib.memo(this, 'allIds_', this.getAllIds_.bind(this));
   stdlib.memo(this, 'allKeys_', this.getAllKeys_.bind(this));
   stdlib.memo(this, 'allKeysMap_', this.getAllKeysMap_.bind(this));
+
 
   this.keysCache = {};
 };
@@ -771,5 +770,6 @@ ObjectGraph.fromJSON = function(o) {
   ov.initLazyData();
   return ov;
 };
+
 
 module.exports = ObjectGraph;
