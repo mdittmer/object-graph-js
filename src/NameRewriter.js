@@ -26,11 +26,24 @@ var NameRewriter = function(opts) {
   this.platforms = opts.platforms || this.platforms.slice();
 };
 
-// Many user agents list multiple parts here.
+// Some user agents will match multiple patterns. The first match will be used,
+// so the order is important. (Chromium-based browsers before Chrome, etc.)
 NameRewriter.prototype.browsers = [
+  {
+    name: 'CocCoc',
+    re: /(coc_coc_browser)\/([0-9_.]+)/,
+  },
   {
     name: 'Edge',
     re: /(Edge)\/([0-9_.]+)/,
+  },
+  {
+    name: 'QQ',
+    re: /(M?QQBrowser)\/([0-9_.]+)/,
+  },
+  {
+    name: 'UC',
+    re: /(UC?Browser)\/([0-9_.]+)/,
   },
   {
     name: 'Yandex',
@@ -39,6 +52,10 @@ NameRewriter.prototype.browsers = [
   {
     name: 'Opera',
     re: /(OPR)\/([0-9_.]+)/,
+  },
+  {
+    name: 'Samsung',
+    re: /(SamsungBrowser)\/([0-9_.]+)/,
   },
   {
     name: 'Firefox',
