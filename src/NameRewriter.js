@@ -113,6 +113,13 @@ NameRewriter.prototype.rewriteName = function(name) {
   return name;
 };
 
+NameRewriter.prototype.unrewriteName = function(name) {
+  for ( var i = 0; i < this.rewrites.length; i++ ) {
+    if ( name === this.rewrites[i][1] ) return this.rewrites[i][0];
+  }
+  return name;
+}
+
 NameRewriter.prototype.userAgentAsPlatformInfo = function(uaStr) {
   function findMatch(matchers) {
     for ( var i = 0; i < matchers.length; i++ ) {

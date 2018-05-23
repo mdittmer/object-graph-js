@@ -571,7 +571,7 @@ ObjectGraph.prototype.getToString = function(id) {
 
 // Interface method: Get the name of given function id.
 ObjectGraph.prototype.getFunctionName = function(id) {
-  return this.functions[id];
+  return this.nameRewriter.unrewriteName(this.functions[id]);
 };
 
 // Interface method: get the root of object graph.
@@ -606,7 +606,8 @@ ObjectGraph.prototype.getAllIds_ = function() {
 ObjectGraph.prototype.getObjectKeys = function(id, opt_predicate) {
   if ( ! this.data[id] ) return [];
   var data = this.data[id];
-  var keys = this.getOwnPropertyNames(data);
+  var keys = this.getOwnPropertyNames(data)
+      .map(this.nameRewriter.unrewriteName.bind(this.nameRewriter));
   if ( ! opt_predicate ) return keys.sort();
   return keys.filter(function(key) {
     return opt_predicate(data[key], key);
@@ -657,6 +658,16 @@ ObjectGraph.prototype.getAllKeys_ = function() {
         key: item.key + '.__proto__',
       } ]).sort((a, b) => a.key.length - b.key.length)
     );
+  }
+
+  const unrewriteName = this.nameRewriter.unrewriteName.bind(this.nameRewriter);
+  for ( const id in strs ) {
+    if ( ! strs.hasOwnProperty(id) ) continue;
+    for ( let i = 0; i < strs[id].length; i++ ) {
+      const parts = strs[id][i].split('.');
+      parts.forEach(unrewriteName);
+      strs[id][i] = parts.join('.');
+    }
   }
 
   return strs;
