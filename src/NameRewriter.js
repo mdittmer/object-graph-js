@@ -118,7 +118,7 @@ NameRewriter.prototype.unrewriteName = function(name) {
     if ( name === this.rewrites[i][1] ) return this.rewrites[i][0];
   }
   return name;
-}
+};
 
 NameRewriter.prototype.userAgentAsPlatformInfo = function(uaStr) {
   function findMatch(matchers) {
