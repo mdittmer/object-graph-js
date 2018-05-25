@@ -665,8 +665,8 @@ ObjectGraph.prototype.getAllKeys_ = function() {
     if ( ! strs.hasOwnProperty(id) ) continue;
     for ( let i = 0; i < strs[id].length; i++ ) {
       const parts = strs[id][i].split('.');
-      parts.forEach(unrewriteName);
-      strs[id][i] = parts.join('.');
+      const unrewrittenParts = parts.map(unrewriteName);
+      strs[id][i] = unrewrittenParts.join('.');
     }
   }
 
