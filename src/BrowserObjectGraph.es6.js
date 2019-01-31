@@ -28,10 +28,10 @@ function BrowserObjectGraph(opts) {
 const ogClassProperties = Object.getOwnPropertyNames(ObjectGraph);
 const bogClassProperties = Object.getOwnPropertyNames(BrowserObjectGraph);
 const extraClassProperties = ogClassProperties
-    .filter(name => !bogClassProperties.includes(name));
+    .filter(name => bogClassProperties.indexOf(name) === -1);
 for (const key of extraClassProperties) {
   BrowserObjectGraph[key] = ObjectGraph[key];
-} 
+}
 
 BrowserObjectGraph.prototype = Object.create(ObjectGraph.prototype);
 
