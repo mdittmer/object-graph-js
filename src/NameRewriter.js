@@ -38,6 +38,10 @@ NameRewriter.prototype.browsers = [
     re: /(Edge)\/([0-9_.]+)/,
   },
   {
+    name: 'Edge',
+    re: /(Edg)\/([0-9_.]+)/,
+  },
+  {
     name: 'QQ',
     re: /(M?QQBrowser)\/([0-9_.]+)/,
   },
