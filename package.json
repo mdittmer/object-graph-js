@@ -20,8 +20,8 @@
   },
   "homepage": "https://github.com/mdittmer/object-graph-js#readme",
   "dependencies": {
-    "facade-js": "git://github.com/mdittmer/facade-js.git",
-    "id-js": "git://github.com/mdittmer/id-js.git",
-    "ya-stdlib-js": "git://github.com/mdittmer/ya-stdlib-js.git"
+    "facade-js": "git+https://github.com/mdittmer/facade-js.git",
+    "id-js": "git+https://github.com/mdittmer/id-js.git",
+    "ya-stdlib-js": "git+https://github.com/mdittmer/ya-stdlib-js.git"
   }
 }
